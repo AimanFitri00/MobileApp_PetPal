@@ -1,0 +1,114 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/booking/booking_bloc.dart';
+import '../../blocs/pet/pet_bloc.dart';
+import '../../models/booking.dart';
+import '../../models/pet.dart';
+import '../../models/vet_profile.dart';
+import '../../screens/bookings/booking_summary_screen.dart';
+import '../../widgets/primary_button.dart';
+
+class VetBookingScreen extends StatefulWidget {
+  const VetBookingScreen({super.key});
+
+  static const routeName = '/bookings/vet';
+
+  @override
+  State<VetBookingScreen> createState() => _VetBookingScreenState();
+}
+
+class _VetBookingScreenState extends State<VetBookingScreen> {
+  DateTime _selectedDate = DateTime.now();
+  final _timeController = TextEditingController();
+  final _notesController = TextEditingController();
+  String? _selectedPetId;
+
+  @override
+  void dispose() {
+    _timeController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  void _submit(VetProfile vet) {
+    final ownerId = context.read<AuthBloc>().state.user?.id;
+    if (ownerId == null || _selectedPetId == null) return;
+    final booking = Booking.vet(
+      id: '',
+      ownerId: ownerId,
+      petId: _selectedPetId!,
+      vetId: vet.userId,
+      date: _selectedDate,
+      time: _timeController.text,
+      notes: _notesController.text,
+      status: BookingStatus.pending,
+    );
+    context.read<BookingBloc>().add(BookingCreated(booking));
+    Navigator.pushReplacementNamed(
+      context,
+      BookingSummaryScreen.routeName,
+      arguments: booking,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vet = ModalRoute.of(context)!.settings.arguments as VetProfile;
+    final pets = context.watch<PetBloc>().state.pets;
+    _selectedPetId = _selectedPetId ?? (pets.isNotEmpty ? pets.first.id : null);
+    return Scaffold(
+      appBar: AppBar(title: Text('Book ${vet.clinicName}')),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DropdownButtonFormField<String>(
+              value: _selectedPetId,
+              decoration: const InputDecoration(labelText: 'Select pet'),
+              items: pets
+                  .map(
+                    (pet) =>
+                        DropdownMenuItem(value: pet.id, child: Text(pet.name)),
+                  )
+                  .toList(),
+              onChanged: (value) => setState(() => _selectedPetId = value),
+            ),
+            const SizedBox(height: 16),
+            CalendarDatePicker(
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(const Duration(days: 60)),
+              initialDate: _selectedDate,
+              onDateChanged: (date) => setState(() => _selectedDate = date),
+            ),
+            TextField(
+              controller: _timeController,
+              decoration: const InputDecoration(labelText: 'Preferred time'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notesController,
+              decoration: const InputDecoration(labelText: 'Notes'),
+              maxLines: 3,
+            ),
+            const Spacer(),
+            if (pets.isEmpty)
+              const Text('Add a pet before booking an appointment.')
+            else
+              BlocBuilder<BookingBloc, BookingState>(
+                builder: (context, state) {
+                  return PrimaryButton(
+                    label: 'Confirm booking',
+                    isLoading: state.isLoading,
+                    onPressed: () => _submit(vet),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
