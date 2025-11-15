@@ -37,12 +37,12 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'ADD_IOS_API_KEY',
-    appId: 'ADD_IOS_APP_ID',
+    apiKey: 'AIzaSyCx6h2AVuJ-M4oEbh367zzT1BPApnjVV7A',
+    appId: '1:343448345698:ios:5147ef53c97e0a1ac5853b',
     messagingSenderId: '343448345698',
     projectId: 'petpal-dc596',
     storageBucket: 'petpal-dc596.firebasestorage.app',
-    iosClientId: 'ADD_IOS_CLIENT_ID',
+    iosClientId: '343448345698-3ihmdji017u32ti5pbkr74ojbe204957.apps.googleusercontent.com',
     iosBundleId: 'com.petpal.app',
   );
 
