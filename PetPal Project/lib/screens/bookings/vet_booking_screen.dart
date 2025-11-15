@@ -66,7 +66,7 @@ class _VetBookingScreenState extends State<VetBookingScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DropdownButtonFormField<String>(
-              value: _selectedPetId,
+              initialValue: _selectedPetId,
               decoration: const InputDecoration(labelText: 'Select pet'),
               items: pets
                   .map(

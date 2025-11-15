@@ -33,6 +33,29 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <!-- Firebase SDK -->
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+    // TODO: Add SDKs for Firebase products you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyClK-yD-MhsmrxvpwftcZqnbFLTZmotRWM",
+      authDomain: "petpal-dc596.firebaseapp.com",
+      projectId: "petpal-dc596",
+      storageBucket: "petpal-dc596.firebasestorage.app",
+      messagingSenderId: "343448345698",
+      appId: "1:343448345698:web:c50aece17ade91b8c5853b",
+      measurementId: "G-QNT8GCF0EM"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

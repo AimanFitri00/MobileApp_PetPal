@@ -56,7 +56,7 @@ class _ReportDashboardScreenState extends State<ReportDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<String>(
-                value: _selectedPetId,
+                initialValue: _selectedPetId,
                 decoration: const InputDecoration(labelText: 'Pet'),
                 items: pets
                     .map(
