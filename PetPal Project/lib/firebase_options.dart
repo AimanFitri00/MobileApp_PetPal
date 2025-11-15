@@ -9,6 +9,9 @@ class DefaultFirebaseOptions {
   DefaultFirebaseOptions._();
 
   static FirebaseOptions get currentPlatform {
+    if (kIsWeb) {
+      return web;
+    }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
@@ -20,8 +23,6 @@ class DefaultFirebaseOptions {
         return windows;
       case TargetPlatform.linux:
         return linux;
-      case TargetPlatform.web:
-        return web;
       default:
         return android;
     }

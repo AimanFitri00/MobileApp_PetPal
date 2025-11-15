@@ -5,7 +5,6 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/booking/booking_bloc.dart';
 import '../../blocs/pet/pet_bloc.dart';
 import '../../models/booking.dart';
-import '../../models/pet.dart';
 import '../../models/vet_profile.dart';
 import '../../screens/bookings/booking_summary_screen.dart';
 import '../../widgets/primary_button.dart';

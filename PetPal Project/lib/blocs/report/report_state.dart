@@ -14,14 +14,14 @@ class ReportState extends Equatable {
   final bool isLoading;
   final bool isExporting;
   final Map<String, dynamic>? reportData;
-  final List<int>? exportedBytes;
+  final Uint8List? exportedBytes;
   final String? errorMessage;
 
   ReportState copyWith({
     bool? isLoading,
     bool? isExporting,
     Map<String, dynamic>? reportData,
-    List<int>? exportedBytes,
+    Uint8List? exportedBytes,
     String? errorMessage,
   }) {
     return ReportState(
