@@ -19,8 +19,17 @@ class SitterRepository {
     );
     return snapshot.docs.map((doc) {
       final data = doc.data();
-      data['userId'] = doc.id;
-      return SitterProfile.fromMap(doc.id, data);
+      // Map user data to sitter profile format
+      // If sitter-specific fields don't exist, use defaults or user data
+      final sitterData = {
+        'userId': doc.id,
+        'experience': data['experience'] ?? 'Not specified',
+        'location': data['location'] ?? data['address'] ?? '',
+        'pricing': data['pricing'] ?? 'Contact for pricing',
+        'services': data['services'] ?? <String>[],
+        'certificateUrl': data['certificateUrl'],
+      };
+      return SitterProfile.fromMap(doc.id, sitterData);
     }).toList();
   }
 }

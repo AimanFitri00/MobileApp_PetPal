@@ -28,8 +28,18 @@ class VetRepository {
     );
     return snapshot.docs.map((doc) {
       final data = doc.data();
-      data['userId'] = doc.id;
-      return VetProfile.fromMap(doc.id, data);
+      // Map user data to vet profile format
+      // If vet-specific fields don't exist, use defaults or user data
+      final vetData = {
+        'userId': doc.id,
+        'clinicName': data['clinicName'] ?? data['name'] ?? 'Veterinary Clinic',
+        'location': data['location'] ?? data['address'] ?? '',
+        'specialization': data['specialization'] ?? 'General Practice',
+        'schedule': data['schedule'] ?? <String>[],
+        'bio': data['bio'],
+        'certificateUrl': data['certificateUrl'],
+      };
+      return VetProfile.fromMap(doc.id, vetData);
     }).toList();
   }
 }
