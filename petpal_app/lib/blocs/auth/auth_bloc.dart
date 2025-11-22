@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../auth_event.dart';
-import '../auth_state.dart';
+import 'auth_event.dart';
+import 'auth_state.dart';
 import '../../repositories/auth_repository.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -21,11 +20,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     _authRepository.authStateChanges.listen((user) {
       if (user != null) {
         _authRepository.getUser(user.uid).then(
-              (userModel) => add(AuthStatusRequested()),
-              onError: (_) => emit(const Unauthenticated()),
+              (userModel) => add(const AuthStatusRequested()),
+              onError: (_) => add(const AuthStatusRequested()),
             );
       } else {
-        emit(const Unauthenticated());
+        add(const AuthStatusRequested());
       }
     });
   }

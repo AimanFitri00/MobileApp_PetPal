@@ -1,5 +1,7 @@
 import 'package:uuid/uuid.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/booking_model.dart';
+import '../models/user_model.dart';
 import '../services/firebase_service.dart';
 
 class BookingRepository {
