@@ -1,87 +1,72 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'pet_event.dart';
-import 'pet_state.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../models/pet.dart';
 import '../../repositories/pet_repository.dart';
 
+part 'pet_event.dart';
+part 'pet_state.dart';
+
 class PetBloc extends Bloc<PetEvent, PetState> {
+  PetBloc(this._petRepository) : super(const PetState.initial()) {
+    on<PetsRequested>(_onPetsRequested);
+    on<PetCreated>(_onPetCreated);
+    on<PetUpdated>(_onPetUpdated);
+    on<PetDeleted>(_onPetDeleted);
+  }
+
   final PetRepository _petRepository;
+  final _uuid = const Uuid();
 
-  PetBloc({required PetRepository petRepository})
-      : _petRepository = petRepository,
-        super(const PetInitial()) {
-    on<LoadPets>(_onLoadPets);
-    on<AddPet>(_onAddPet);
-    on<UpdatePet>(_onUpdatePet);
-    on<DeletePet>(_onDeletePet);
-  }
-
-  Future<void> _onLoadPets(
-    LoadPets event,
+  Future<void> _onPetsRequested(
+    PetsRequested event,
     Emitter<PetState> emit,
   ) async {
-    emit(const PetLoading());
+    emit(state.copyWith(isLoading: true));
     try {
-      final pets = await _petRepository.getPetsByOwner(event.ownerId);
-      emit(PetLoaded(pets: pets));
-    } catch (e) {
-      emit(PetError(message: e.toString()));
+      final pets = await _petRepository.fetchPets(event.ownerId);
+      emit(state.copyWith(isLoading: false, pets: pets));
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
   }
 
-  Future<void> _onAddPet(
-    AddPet event,
-    Emitter<PetState> emit,
-  ) async {
-    emit(const PetLoading());
+  Future<void> _onPetCreated(PetCreated event, Emitter<PetState> emit) async {
+    emit(state.copyWith(isLoading: true));
     try {
-      await _petRepository.createPet(
-        ownerId: event.ownerId,
-        name: event.name,
-        species: event.species,
-        breed: event.breed,
-        age: event.age,
-        photoFile: event.photoFile,
-      );
-      // Reload pets
-      final pets = await _petRepository.getPetsByOwner(event.ownerId);
-      emit(PetLoaded(pets: pets));
-    } catch (e) {
-      emit(PetError(message: e.toString()));
+      final pet = event.pet.id.isEmpty
+          ? event.pet.copyWith(id: _uuid.v4())
+          : event.pet;
+      await _petRepository.createPet(pet);
+      final updated = List<Pet>.from(state.pets)..add(pet);
+      emit(state.copyWith(isLoading: false, pets: updated));
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
   }
 
-  Future<void> _onUpdatePet(
-    UpdatePet event,
-    Emitter<PetState> emit,
-  ) async {
-    emit(const PetLoading());
+  Future<void> _onPetUpdated(PetUpdated event, Emitter<PetState> emit) async {
+    emit(state.copyWith(isLoading: true));
     try {
-      await _petRepository.updatePet(
-        event.pet,
-        newPhotoFile: event.newPhotoFile,
-      );
-      // Reload pets
-      final pets = await _petRepository.getPetsByOwner(event.pet.ownerId);
-      emit(PetLoaded(pets: pets));
-    } catch (e) {
-      emit(PetError(message: e.toString()));
+      await _petRepository.createPet(event.pet);
+      final updated = state.pets
+          .map((pet) => pet.id == event.pet.id ? event.pet : pet)
+          .toList();
+      emit(state.copyWith(isLoading: false, pets: updated));
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
   }
 
-  Future<void> _onDeletePet(
-    DeletePet event,
-    Emitter<PetState> emit,
-  ) async {
-    emit(const PetLoading());
+  Future<void> _onPetDeleted(PetDeleted event, Emitter<PetState> emit) async {
+    emit(state.copyWith(isLoading: true));
     try {
-      final pet = await _petRepository.getPet(event.petId);
-      await _petRepository.deletePet(pet);
-      // Reload pets
-      final pets = await _petRepository.getPetsByOwner(pet.ownerId);
-      emit(PetLoaded(pets: pets));
-    } catch (e) {
-      emit(PetError(message: e.toString()));
+      await _petRepository.deletePet(event.petId);
+      final updated = state.pets.where((pet) => pet.id != event.petId).toList();
+      emit(state.copyWith(isLoading: false, pets: updated));
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
   }
 }
-

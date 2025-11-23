@@ -1,73 +1,60 @@
+import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'auth_event.dart';
-import 'auth_state.dart';
+
+import '../../models/app_user.dart';
 import '../../repositories/auth_repository.dart';
 
+part 'auth_event.dart';
+part 'auth_state.dart';
+
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
+  AuthBloc(this._authRepository) : super(const AuthState.unknown()) {
+    on<AuthStatusRequested>(_onStatusRequested);
+    on<AuthLoginRequested>(_onLoginRequested);
+    on<AuthRegisterRequested>(_onRegisterRequested);
+    on<AuthLogoutRequested>(_onLogoutRequested);
+    on<AuthPasswordResetRequested>(_onPasswordResetRequested);
+  }
+
   final AuthRepository _authRepository;
 
-  AuthBloc({required AuthRepository authRepository})
-      : _authRepository = authRepository,
-        super(const AuthInitial()) {
-    on<AppStarted>(_onAppStarted);
-    on<SignInRequested>(_onSignInRequested);
-    on<RegisterRequested>(_onRegisterRequested);
-    on<ForgotPasswordRequested>(_onForgotPasswordRequested);
-    on<LoggedOut>(_onLoggedOut);
-    on<AuthStatusRequested>(_onAuthStatusRequested);
-
-    // Listen to auth state changes
-    _authRepository.authStateChanges.listen((user) {
-      if (user != null) {
-        _authRepository.getUser(user.uid).then(
-              (userModel) => add(const AuthStatusRequested()),
-              onError: (_) => add(const AuthStatusRequested()),
-            );
-      } else {
-        add(const AuthStatusRequested());
-      }
-    });
-  }
-
-  Future<void> _onAppStarted(
-    AppStarted event,
+  Future<void> _onStatusRequested(
+    AuthStatusRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(const AuthLoading());
-    try {
-      final user = _authRepository.currentUser;
-      if (user != null) {
-        final userModel = await _authRepository.getUser(user.uid);
-        emit(Authenticated(user: userModel));
-      } else {
-        emit(const Unauthenticated());
-      }
-    } catch (e) {
-      emit(AuthFailure(message: e.toString()));
-    }
+    await emit.forEach(
+      _authRepository.authStateChanges.asyncMap((firebaseUser) async {
+        if (firebaseUser == null) {
+          return const AuthState.unauthenticated();
+        }
+        final user = await _authRepository.fetchUser(firebaseUser.uid);
+        return AuthState.authenticated(user);
+      }),
+      onData: (state) => state,
+    );
   }
 
-  Future<void> _onSignInRequested(
-    SignInRequested event,
+  Future<void> _onLoginRequested(
+    AuthLoginRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(const AuthLoading());
+    emit(state.copyWith(isLoading: true));
     try {
-      final user = await _authRepository.signIn(
+      final user = await _authRepository.login(
         email: event.email,
         password: event.password,
       );
-      emit(Authenticated(user: user));
-    } catch (e) {
-      emit(AuthFailure(message: e.toString()));
+      emit(AuthState.authenticated(user));
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
   }
 
   Future<void> _onRegisterRequested(
-    RegisterRequested event,
+    AuthRegisterRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(const AuthLoading());
+    emit(state.copyWith(isLoading: true));
     try {
       final user = await _authRepository.register(
         name: event.name,
@@ -75,53 +62,25 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
         role: event.role,
       );
-      emit(Authenticated(user: user));
-    } catch (e) {
-      emit(AuthFailure(message: e.toString()));
+      emit(AuthState.authenticated(user));
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
   }
 
-  Future<void> _onForgotPasswordRequested(
-    ForgotPasswordRequested event,
+  Future<void> _onLogoutRequested(
+    AuthLogoutRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(const AuthLoading());
-    try {
-      await _authRepository.sendPasswordResetEmail(event.email);
-      emit(const Unauthenticated());
-    } catch (e) {
-      emit(AuthFailure(message: e.toString()));
-    }
+    await _authRepository.logout();
+    emit(const AuthState.unauthenticated());
   }
 
-  Future<void> _onLoggedOut(
-    LoggedOut event,
+  Future<void> _onPasswordResetRequested(
+    AuthPasswordResetRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(const AuthLoading());
-    try {
-      await _authRepository.signOut();
-      emit(const Unauthenticated());
-    } catch (e) {
-      emit(AuthFailure(message: e.toString()));
-    }
-  }
-
-  Future<void> _onAuthStatusRequested(
-    AuthStatusRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    try {
-      final user = _authRepository.currentUser;
-      if (user != null) {
-        final userModel = await _authRepository.getUser(user.uid);
-        emit(Authenticated(user: userModel));
-      } else {
-        emit(const Unauthenticated());
-      }
-    } catch (e) {
-      emit(const Unauthenticated());
-    }
+    await _authRepository.sendPasswordReset(event.email);
+    emit(state.copyWith(message: 'Password reset email sent'));
   }
 }
-

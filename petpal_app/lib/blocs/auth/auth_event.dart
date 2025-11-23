@@ -1,5 +1,4 @@
-import 'package:equatable/equatable.dart';
-import '../../models/user_model.dart';
+part of 'auth_bloc.dart';
 
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
@@ -8,54 +7,46 @@ abstract class AuthEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class AppStarted extends AuthEvent {
-  const AppStarted();
+class AuthStatusRequested extends AuthEvent {
+  const AuthStatusRequested();
 }
 
-class SignInRequested extends AuthEvent {
+class AuthLoginRequested extends AuthEvent {
+  const AuthLoginRequested({required this.email, required this.password});
+
   final String email;
   final String password;
-
-  const SignInRequested({
-    required this.email,
-    required this.password,
-  });
 
   @override
   List<Object?> get props => [email, password];
 }
 
-class RegisterRequested extends AuthEvent {
-  final String name;
-  final String email;
-  final String password;
-  final UserRole role;
-
-  const RegisterRequested({
+class AuthRegisterRequested extends AuthEvent {
+  const AuthRegisterRequested({
     required this.name,
     required this.email,
     required this.password,
     required this.role,
   });
 
+  final String name;
+  final String email;
+  final String password;
+  final UserRole role;
+
   @override
   List<Object?> get props => [name, email, password, role];
 }
 
-class ForgotPasswordRequested extends AuthEvent {
-  final String email;
+class AuthLogoutRequested extends AuthEvent {
+  const AuthLogoutRequested();
+}
 
-  const ForgotPasswordRequested({required this.email});
+class AuthPasswordResetRequested extends AuthEvent {
+  const AuthPasswordResetRequested(this.email);
+
+  final String email;
 
   @override
   List<Object?> get props => [email];
 }
-
-class LoggedOut extends AuthEvent {
-  const LoggedOut();
-}
-
-class AuthStatusRequested extends AuthEvent {
-  const AuthStatusRequested();
-}
-

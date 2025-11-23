@@ -1,11 +1,11 @@
 {
-    "name": "petpal_app",
-    "short_name": "petpal_app",
+    "name": "petpal_mobileapp",
+    "short_name": "petpal_mobileapp",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "PetPal Mobile Application",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

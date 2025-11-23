@@ -1,36 +1,26 @@
-import 'package:equatable/equatable.dart';
-import '../../models/pet_model.dart';
+part of 'pet_bloc.dart';
 
-abstract class PetState extends Equatable {
-  const PetState();
+class PetState extends Equatable {
+  const PetState({
+    required this.isLoading,
+    required this.pets,
+    this.errorMessage,
+  });
 
-  @override
-  List<Object?> get props => [];
-}
+  const PetState.initial() : this(isLoading: false, pets: const []);
 
-class PetInitial extends PetState {
-  const PetInitial();
-}
+  final bool isLoading;
+  final List<Pet> pets;
+  final String? errorMessage;
 
-class PetLoading extends PetState {
-  const PetLoading();
-}
-
-class PetLoaded extends PetState {
-  final List<PetModel> pets;
-
-  const PetLoaded({required this.pets});
-
-  @override
-  List<Object?> get props => [pets];
-}
-
-class PetError extends PetState {
-  final String message;
-
-  const PetError({required this.message});
+  PetState copyWith({bool? isLoading, List<Pet>? pets, String? errorMessage}) {
+    return PetState(
+      isLoading: isLoading ?? this.isLoading,
+      pets: pets ?? this.pets,
+      errorMessage: errorMessage,
+    );
+  }
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [isLoading, pets, errorMessage];
 }
-

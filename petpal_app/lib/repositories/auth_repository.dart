@@ -1,149 +1,68 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/user_model.dart';
-import '../services/auth_service.dart';
-import '../services/firebase_service.dart';
-import '../services/messaging_service.dart';
+
+import '../models/app_user.dart';
+import '../services/firebase_auth_service.dart';
+import '../services/firestore_service.dart';
 
 class AuthRepository {
-  final AuthService _authService;
-  final FirebaseService _firebaseService;
-  final MessagingService _messagingService;
-
   AuthRepository({
-    required AuthService authService,
-    required FirebaseService firebaseService,
-    required MessagingService messagingService,
-  })  : _authService = authService,
-        _firebaseService = firebaseService,
-        _messagingService = messagingService;
+    required FirebaseAuthService authService,
+    required FirestoreService firestoreService,
+  }) : _authService = authService,
+       _firestoreService = firestoreService;
 
-  Stream<User?> get authStateChanges => _authService.authStateChanges;
+  final FirebaseAuthService _authService;
+  final FirestoreService _firestoreService;
 
-  User? get currentUser => _authService.currentUser;
+  Stream<User?> get authStateChanges => _authService.authStateChanges();
 
-  /// Sign in with email and password
-  Future<UserModel> signIn({
+  Future<AppUser> login({
     required String email,
     required String password,
   }) async {
-    try {
-      final credential = await _authService.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      // Update FCM token
-      await _updateFCMToken(credential.user!.uid);
-
-      return await getUser(credential.user!.uid);
-    } catch (e) {
-      throw Exception('Sign in failed: $e');
-    }
+    final credential = await _authService.signIn(
+      email: email,
+      password: password,
+    );
+    return _loadUser(credential.user!.uid);
   }
 
-  /// Register new user
-  Future<UserModel> register({
+  Future<AppUser> register({
     required String name,
     required String email,
     required String password,
     required UserRole role,
   }) async {
-    try {
-      final credential = await _authService.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      // Update display name
-      await _authService.updateDisplayName(name);
-
-      // Create user document
-      final user = UserModel(
-        id: credential.user!.uid,
-        name: name,
-        email: email,
-        role: role,
-        createdAt: DateTime.now(),
-      );
-
-      await _firebaseService.setDocument(
-        collection: _firebaseService.usersCollection(),
-        docId: user.id,
-        data: user.toMap(),
-        merge: false,
-      );
-
-      // Update FCM token
-      await _updateFCMToken(user.id);
-
-      return user;
-    } catch (e) {
-      throw Exception('Registration failed: $e');
-    }
+    final credential = await _authService.register(
+      email: email,
+      password: password,
+    );
+    final user = AppUser(
+      id: credential.user!.uid,
+      name: name,
+      email: email,
+      role: role,
+    );
+    await _firestoreService.setDocument(
+      collection: _firestoreService.usersRef(),
+      docId: user.id,
+      data: user.toMap(),
+    );
+    return user;
   }
 
-  /// Get user by ID
-  Future<UserModel> getUser(String uid) async {
-    try {
-      final snapshot = await _firebaseService.getDocument(
-        collection: _firebaseService.usersCollection(),
-        docId: uid,
-      );
+  Future<void> sendPasswordReset(String email) =>
+      _authService.sendPasswordResetEmail(email);
 
-      if (!snapshot.exists) {
-        throw Exception('User not found');
-      }
+  Future<void> logout() => _authService.signOut();
 
-      return UserModel.fromMap(snapshot.id, snapshot.data()!);
-    } catch (e) {
-      throw Exception('Failed to get user: $e');
-    }
-  }
+  Future<AppUser> fetchUser(String uid) => _loadUser(uid);
 
-  /// Update user profile
-  Future<void> updateUser(UserModel user) async {
-    try {
-      await _firebaseService.setDocument(
-        collection: _firebaseService.usersCollection(),
-        docId: user.id,
-        data: user.toMap(),
-        merge: true,
-      );
-    } catch (e) {
-      throw Exception('Failed to update user: $e');
-    }
-  }
-
-  /// Send password reset email
-  Future<void> sendPasswordResetEmail(String email) async {
-    try {
-      await _authService.sendPasswordResetEmail(email);
-    } catch (e) {
-      throw Exception('Failed to send password reset email: $e');
-    }
-  }
-
-  /// Sign out
-  Future<void> signOut() async {
-    try {
-      await _authService.signOut();
-    } catch (e) {
-      throw Exception('Sign out failed: $e');
-    }
-  }
-
-  /// Update FCM token
-  Future<void> _updateFCMToken(String uid) async {
-    try {
-      final token = await _messagingService.getFCMToken();
-      if (token != null) {
-        final user = await getUser(uid);
-        final updatedUser = user.copyWith(fcmToken: token);
-        await updateUser(updatedUser);
-      }
-    } catch (e) {
-      // Silently fail - token update is not critical
-    }
+  Future<AppUser> _loadUser(String uid) async {
+    final snapshot = await _firestoreService.getDocument(
+      collection: _firestoreService.usersRef(),
+      docId: uid,
+    );
+    return AppUser.fromMap(snapshot.id, snapshot.data() ?? {});
   }
 }
-

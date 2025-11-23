@@ -29,13 +29,6 @@
             {
               "client_id": "343448345698-2fe4rspe5249cuue8ichbv3gl9ealm3r.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "343448345698-3ihmdji017u32ti5pbkr74ojbe204957.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.petpal.app"
-              }
             }
           ]
         }
@@ -44,4 +37,3 @@
   ],
   "configuration_version": "1"
 }
-

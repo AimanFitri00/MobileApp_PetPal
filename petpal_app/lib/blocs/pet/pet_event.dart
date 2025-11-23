@@ -1,6 +1,4 @@
-import 'package:equatable/equatable.dart';
-import '../../models/pet_model.dart';
-import 'dart:io';
+part of 'pet_bloc.dart';
 
 abstract class PetEvent extends Equatable {
   const PetEvent();
@@ -9,55 +7,38 @@ abstract class PetEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class LoadPets extends PetEvent {
-  final String ownerId;
+class PetsRequested extends PetEvent {
+  const PetsRequested(this.ownerId);
 
-  const LoadPets({required this.ownerId});
+  final String ownerId;
 
   @override
   List<Object?> get props => [ownerId];
 }
 
-class AddPet extends PetEvent {
-  final String ownerId;
-  final String name;
-  final String species;
-  final String breed;
-  final int age;
-  final File? photoFile;
+class PetCreated extends PetEvent {
+  const PetCreated(this.pet);
 
-  const AddPet({
-    required this.ownerId,
-    required this.name,
-    required this.species,
-    required this.breed,
-    required this.age,
-    this.photoFile,
-  });
+  final Pet pet;
 
   @override
-  List<Object?> get props => [ownerId, name, species, breed, age, photoFile];
+  List<Object?> get props => [pet];
 }
 
-class UpdatePet extends PetEvent {
-  final PetModel pet;
-  final File? newPhotoFile;
+class PetUpdated extends PetEvent {
+  const PetUpdated(this.pet);
 
-  const UpdatePet({
-    required this.pet,
-    this.newPhotoFile,
-  });
+  final Pet pet;
 
   @override
-  List<Object?> get props => [pet, newPhotoFile];
+  List<Object?> get props => [pet];
 }
 
-class DeletePet extends PetEvent {
+class PetDeleted extends PetEvent {
+  const PetDeleted(this.petId);
+
   final String petId;
-
-  const DeletePet({required this.petId});
 
   @override
   List<Object?> get props => [petId];
 }
-

@@ -1,74 +1,37 @@
-# PetPal - Smart Pet Care Companion
+# PetPal – Smart Pet Care Companion
 
-A cross-platform Flutter mobile application connecting pet owners, veterinarians, and pet sitters in one ecosystem.
-
-## Features
-
-- **Multi-role Support**: Pet Owners, Veterinarians, and Pet Sitters
-- **Authentication**: Secure email/password authentication with Firebase Auth
-- **Pet Management**: CRUD operations for pets with photo uploads
-- **Booking System**: Book appointments with vets and sitters
-- **Real-time Chat**: Chat between owners, vets, and sitters
-- **Push Notifications**: FCM notifications for bookings and messages
-- **Profile Management**: Edit profile with image upload
-- **Clean Architecture**: BLoC pattern with repository layer
+Flutter + Firebase application that connects pet owners, veterinarians, and pet sitters in one ecosystem. The project follows clean architecture with a dedicated repository layer, Firebase service wrappers, and BLoC-based presentation logic.
 
 ## Tech Stack
 
-- **Flutter** 3.24.0 (null-safe)
-- **Firebase**: Auth, Firestore, Storage, Cloud Functions, Cloud Messaging
-- **State Management**: flutter_bloc
-- **Architecture**: Clean Architecture with Repository pattern
+- Flutter 3.x (Material 3, responsive layouts)
+- Firebase Authentication, Firestore, Storage, Cloud Messaging, Cloud Functions
+- flutter_bloc + equatable for state management
+- Firebase Cloud Functions (Node 18 + TypeScript)
+- PDF/Printing, Share Plus, Table Calendar, etc.
 
 ## Project Structure
 
 ```
 lib/
-├── blocs/          # BLoC state management
-├── models/         # Data models
-├── repositories/   # Data layer
-├── services/       # Firebase service wrappers
-├── ui/             # UI screens and widgets
-├── utils/          # Utilities and validators
-└── config/         # Configuration
+ ├── blocs/                 # Feature-specific BLoCs (auth, pets, bookings, reports…)
+ ├── models/                # Data models for users, pets, bookings, activities
+ ├── repositories/          # Domain repositories talking to services
+ ├── services/              # FirebaseAuth/Firestore/Storage wrappers, notifications, PDF
+ ├── screens/               # UI modules (auth, profile, pets, vets, sitters, reports)
+ ├── utils/                 # Constants, validators, dialogs
+ ├── widgets/               # Reusable UI components
+ └── main.dart              # App bootstrap, Firebase init, MultiBlocProvider routing
 ```
 
-## Getting Started
+The Firebase Cloud Functions live under `functions/` with TypeScript sources.
 
-### Prerequisites
+## Firebase Setup
 
-- Flutter SDK (3.24.0 or higher)
-- Dart SDK (3.9.2 or higher)
-- Firebase account
-- Android Studio / Xcode (for mobile development)
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd petpal_app
-   ```
-
-2. **Install dependencies**
-   ```bash
-   flutter pub get
-   ```
-
-3. **Set up Firebase**
-   - Create a Firebase project at [Firebase Console](https://console.firebase.google.com)
-   - Enable Authentication (Email/Password)
-   - Enable Firestore Database
-   - Enable Cloud Storage
-   - Enable Cloud Messaging
-   - Run `flutterfire configure` or manually update `lib/firebase_options.dart`
-
-4. **Deploy Firestore Rules**
-   ```bash
-   firebase deploy --only firestore:rules
-   ```
-
-5. **Deploy Cloud Functions** (optional)
+1. Install the FlutterFire CLI and run `flutterfire configure` to generate `lib/firebase_options.dart`. Replace the placeholder values currently in that file.
+2. Enable Authentication (Email/Password), Firestore, Storage, Cloud Messaging, and Cloud Functions in the Firebase console.
+3. (Optional) Add App Check & Crashlytics if you plan to use those services.
+4. Deploy Cloud Functions:
    ```bash
    cd functions
    npm install
@@ -76,50 +39,31 @@ lib/
    firebase deploy --only functions
    ```
 
-6. **Run the app**
-   ```bash
-   flutter run
-   ```
+## Key Modules
+
+- **Authentication**: Login, register (role selection), forgot password with Firebase Auth + password history enforcement via callable function.
+- **Profile Management**: View/edit profile, upload profile photo to Storage.
+- **Pet CRUD**: Add/edit/delete pets, detail page with share/export options and activity logging.
+- **Vet & Sitter Booking**: Browsing, detail pages, booking forms, booking summary/history, Cloud Function powered push notifications for status changes.
+- **Activity Logs & Reports**: Track daily activities, generate pet health/appointment reports, export as PDF/share.
+- **Notifications**: Firebase Messaging + local notifications wrapper for reminders and server-triggered updates.
+
+## Running the App
+
+```bash
+flutter pub get
+flutter run
+```
+
+Ensure Developer Mode is enabled on Windows for plugin symlinks.
 
 ## Testing
 
-Run tests:
-```bash
-flutter test
-```
+- Widget and bloc tests can be added under `test/`; `bloc_test` and `mocktail` are included.
+- Use `flutter test` to execute the suite.
 
-Run with coverage:
-```bash
-flutter test --coverage
-```
+## Next Steps
 
-## CI/CD
-
-GitHub Actions automatically runs:
-- `flutter analyze` on push/PR
-- `flutter test` on push/PR
-
-## Firestore Security Rules
-
-Security rules are located in `firestore.rules` and implement role-based access control (RBAC).
-
-## Cloud Functions
-
-Cloud Functions are located in `functions/` directory:
-- `onUserCreate`: Creates user document on signup
-- `sendBookingNotifications`: Sends FCM notifications for bookings
-- `onMessageWrite`: Updates chat metadata
-- `scheduledReminders`: Sends daily booking reminders
-
-## Contributing
-
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Make your changes
-3. Run tests: `flutter test`
-4. Commit: `git commit -m "Add your feature"`
-5. Push: `git push origin feature/your-feature`
-6. Create a Pull Request
-
-## License
-
-This project is private and proprietary.
+- Add actual user/device FCM token registration to enable push notifications fully.
+- Connect booking forms to real pet/provider selections (currently placeholders for IDs).
+- Hook password reset flow to callable function before updating credentials.
