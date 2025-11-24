@@ -10,6 +10,8 @@ import '../pets/pet_list_screen.dart';
 import '../reports/report_dashboard_screen.dart';
 import '../sitters/sitter_list_screen.dart';
 import '../vets/vet_list_screen.dart';
+import '../bookings/provider_dashboard_screen.dart';
+import '../../models/app_user.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,13 +24,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
-
-  final _pages = const [
-    PetListScreen(),
-    VetListScreen(),
-    SitterListScreen(),
-    ReportDashboardScreen(),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -46,30 +41,56 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         }
       },
-      child: Scaffold(
-        body: _pages[_index],
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _index,
-          onDestinationSelected: (index) => setState(() => _index = index),
-          destinations: const [
-            NavigationDestination(
+      child: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, state) {
+          final user = state.user;
+          final isProvider =
+              user?.role == UserRole.vet || user?.role == UserRole.sitter;
+
+          final pages = [
+            if (isProvider) const ProviderDashboardScreen(),
+            const PetListScreen(),
+            const VetListScreen(),
+            const SitterListScreen(),
+            const ReportDashboardScreen(),
+          ];
+
+          final destinations = [
+            if (isProvider)
+              const NavigationDestination(
+                icon: Icon(Icons.dashboard_outlined),
+                label: 'Dashboard',
+              ),
+            const NavigationDestination(
               icon: Icon(Icons.pets_outlined),
               label: 'Pets',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.medical_information_outlined),
               label: 'Vets',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.home_work_outlined),
               label: 'Sitters',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.bar_chart),
               label: 'Reports',
             ),
-          ],
-        ),
+          ];
+
+          // Ensure index is valid
+          if (_index >= pages.length) _index = 0;
+
+          return Scaffold(
+            body: pages[_index],
+            bottomNavigationBar: NavigationBar(
+              selectedIndex: _index,
+              onDestinationSelected: (index) => setState(() => _index = index),
+              destinations: destinations,
+            ),
+          );
+        },
       ),
     );
   }

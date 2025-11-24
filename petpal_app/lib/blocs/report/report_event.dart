@@ -20,3 +20,21 @@ class ReportRequested extends ReportEvent {
 class ReportExportRequested extends ReportEvent {
   const ReportExportRequested();
 }
+
+class VetStatsRequested extends ReportEvent {
+  const VetStatsRequested(this.vetId);
+
+  final String vetId;
+
+  @override
+  List<Object?> get props => [vetId];
+}
+
+class SitterStatsRequested extends ReportEvent {
+  const SitterStatsRequested(this.sitterId);
+
+  final String sitterId;
+
+  @override
+  List<Object?> get props => [sitterId];
+}

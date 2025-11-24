@@ -49,7 +49,7 @@ class PetBloc extends Bloc<PetEvent, PetState> {
   Future<void> _onPetUpdated(PetUpdated event, Emitter<PetState> emit) async {
     emit(state.copyWith(isLoading: true));
     try {
-      await _petRepository.createPet(event.pet);
+      await _petRepository.updatePet(event.pet);
       final updated = state.pets
           .map((pet) => pet.id == event.pet.id ? event.pet : pet)
           .toList();

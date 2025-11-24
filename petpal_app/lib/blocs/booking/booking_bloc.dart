@@ -11,6 +11,7 @@ part 'booking_state.dart';
 class BookingBloc extends Bloc<BookingEvent, BookingState> {
   BookingBloc(this._bookingRepository) : super(const BookingState.initial()) {
     on<BookingsRequested>(_onBookingsRequested);
+    on<ProviderBookingsRequested>(_onProviderBookingsRequested);
     on<BookingCreated>(_onBookingCreated);
     on<BookingStatusUpdated>(_onStatusUpdated);
   }
@@ -27,6 +28,21 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
       final bookings = await _bookingRepository.fetchOwnerBookings(
         event.ownerId,
       );
+      emit(state.copyWith(isLoading: false, bookings: bookings));
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onProviderBookingsRequested(
+    ProviderBookingsRequested event,
+    Emitter<BookingState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true));
+    try {
+      final bookings = event.role == UserRole.vet
+          ? await _bookingRepository.fetchVetBookings(event.userId)
+          : await _bookingRepository.fetchSitterBookings(event.userId);
       emit(state.copyWith(isLoading: false, bookings: bookings));
     } catch (error) {
       emit(state.copyWith(isLoading: false, errorMessage: error.toString()));

@@ -22,6 +22,14 @@ class PetRepository {
     return snapshot.docs.map((doc) => Pet.fromMap(doc.id, doc.data())).toList();
   }
 
+  Future<void> updatePet(Pet pet) {
+    return _firestoreService.setDocument(
+      collection: _firestoreService.petsRef(),
+      docId: pet.id,
+      data: pet.toMap(),
+    );
+  }
+
   Future<void> deletePet(String petId) {
     return _firestoreService.petsRef().doc(petId).delete();
   }

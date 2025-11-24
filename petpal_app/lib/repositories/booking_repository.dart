@@ -37,6 +37,26 @@ class BookingRepository {
     return [...vetBookings, ...sitterBookings];
   }
 
+  Future<List<Booking>> fetchVetBookings(String vetId) async {
+    final snapshot = await _firestoreService.queryCollection(
+      collection: _firestoreService.vetBookingsRef(),
+      builder: (query) => query.where('vetId', isEqualTo: vetId),
+    );
+    return snapshot.docs
+        .map((doc) => Booking.fromMap(doc.id, doc.data(), BookingType.vet))
+        .toList();
+  }
+
+  Future<List<Booking>> fetchSitterBookings(String sitterId) async {
+    final snapshot = await _firestoreService.queryCollection(
+      collection: _firestoreService.sitterBookingsRef(),
+      builder: (query) => query.where('sitterId', isEqualTo: sitterId),
+    );
+    return snapshot.docs
+        .map((doc) => Booking.fromMap(doc.id, doc.data(), BookingType.sitter))
+        .toList();
+  }
+
   Future<void> updateStatus({
     required Booking booking,
     required BookingStatus status,

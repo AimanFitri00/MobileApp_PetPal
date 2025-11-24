@@ -18,10 +18,38 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
        super(const ReportState.initial()) {
     on<ReportRequested>(_onRequested);
     on<ReportExportRequested>(_onExportRequested);
+    on<VetStatsRequested>(_onVetStatsRequested);
+    on<SitterStatsRequested>(_onSitterStatsRequested);
   }
 
   final ReportRepository _reportRepository;
   final PdfService _pdfService;
+
+  Future<void> _onVetStatsRequested(
+    VetStatsRequested event,
+    Emitter<ReportState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true));
+    try {
+      final stats = await _reportRepository.fetchVetStats(event.vetId);
+      emit(state.copyWith(isLoading: false, reportData: stats));
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onSitterStatsRequested(
+    SitterStatsRequested event,
+    Emitter<ReportState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true));
+    try {
+      final stats = await _reportRepository.fetchSitterStats(event.sitterId);
+      emit(state.copyWith(isLoading: false, reportData: stats));
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
+    }
+  }
 
   Future<void> _onRequested(
     ReportRequested event,

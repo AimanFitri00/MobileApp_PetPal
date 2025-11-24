@@ -26,6 +26,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
 
+  // Vet controllers
+  late TextEditingController _specializationController;
+  late TextEditingController _clinicLocationController;
+  late TextEditingController _scheduleController;
+
+  // Sitter controllers
+  late TextEditingController _experienceController;
+  late TextEditingController _pricingController;
+  late TextEditingController _serviceAreaController;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _specializationController.dispose();
+    _clinicLocationController.dispose();
+    _scheduleController.dispose();
+    _experienceController.dispose();
+    _pricingController.dispose();
+    _serviceAreaController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +63,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController = TextEditingController(text: user?.name);
     _phoneController = TextEditingController(text: user?.phone);
     _addressController = TextEditingController(text: user?.address);
+    
+    // Vet init
+    _specializationController = TextEditingController(text: user?.specialization);
+    _clinicLocationController = TextEditingController(text: user?.clinicLocation);
+    _scheduleController = TextEditingController(text: user?.schedule);
+
+    // Sitter init
+    _experienceController = TextEditingController(text: user?.experience);
+    _pricingController = TextEditingController(text: user?.pricing?.toString());
+    _serviceAreaController = TextEditingController(text: user?.serviceArea);
   }
 
   Future<void> _uploadImage() async {
@@ -58,6 +92,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
       address: _addressController.text.trim(),
+      specialization: _specializationController.text.trim(),
+      clinicLocation: _clinicLocationController.text.trim(),
+      schedule: _scheduleController.text.trim(),
+      experience: _experienceController.text.trim(),
+      pricing: double.tryParse(_pricingController.text.trim()),
+      serviceArea: _serviceAreaController.text.trim(),
     );
     bloc.add(ProfileUpdated(updated));
   }
@@ -114,6 +154,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         controller: _addressController,
                         label: 'Address',
                       ),
+                      if (user.role == UserRole.vet) ...[
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          controller: _specializationController,
+                          label: 'Specialization',
+                        ),
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          controller: _clinicLocationController,
+                          label: 'Clinic Location',
+                        ),
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          controller: _scheduleController,
+                          label: 'Schedule',
+                          maxLines: 3,
+                        ),
+                      ],
+                      if (user.role == UserRole.sitter) ...[
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          controller: _experienceController,
+                          label: 'Experience',
+                          maxLines: 3,
+                        ),
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          controller: _pricingController,
+                          label: 'Hourly Rate',
+                          keyboardType: TextInputType.number,
+                        ),
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          controller: _serviceAreaController,
+                          label: 'Service Area',
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       PrimaryButton(
                         label: 'Save changes',

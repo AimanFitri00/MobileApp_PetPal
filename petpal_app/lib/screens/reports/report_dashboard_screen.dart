@@ -5,19 +5,40 @@ import 'package:printing/printing.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/pet/pet_bloc.dart';
 import '../../blocs/report/report_bloc.dart';
+import '../../models/app_user.dart';
 import '../../models/pet.dart';
 import '../../widgets/primary_button.dart';
+import 'clinic_dashboard_screen.dart';
+import 'sitter_dashboard_screen.dart';
 
-class ReportDashboardScreen extends StatefulWidget {
+class ReportDashboardScreen extends StatelessWidget {
   const ReportDashboardScreen({super.key});
 
   static const routeName = '/reports';
 
   @override
-  State<ReportDashboardScreen> createState() => _ReportDashboardScreenState();
+  Widget build(BuildContext context) {
+    final user = context.watch<AuthBloc>().state.user;
+    if (user == null) return const SizedBox.shrink();
+
+    if (user.role == UserRole.vet) {
+      return const ClinicDashboardScreen();
+    } else if (user.role == UserRole.sitter) {
+      return const SitterDashboardScreen();
+    } else {
+      return const _PetHealthReport();
+    }
+  }
 }
 
-class _ReportDashboardScreenState extends State<ReportDashboardScreen> {
+class _PetHealthReport extends StatefulWidget {
+  const _PetHealthReport();
+
+  @override
+  State<_PetHealthReport> createState() => _PetHealthReportState();
+}
+
+class _PetHealthReportState extends State<_PetHealthReport> {
   String? _selectedPetId;
 
   void _generateReport() {
@@ -87,6 +108,11 @@ class _ReportDashboardScreenState extends State<ReportDashboardScreen> {
                         ),
                       );
                     }
+                    // Ensure we are looking at owner report data
+                    if (!state.reportData!.containsKey('pet')) {
+                       return const Center(child: Text('Invalid report data.'));
+                    }
+                    
                     final pet = state.reportData!['pet'] as Pet;
                     final bookings = state.reportData!['bookings'] as List;
                     final activities = state.reportData!['activities'] as List;

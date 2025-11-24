@@ -16,6 +16,16 @@ class BookingsRequested extends BookingEvent {
   List<Object?> get props => [ownerId];
 }
 
+class ProviderBookingsRequested extends BookingEvent {
+  const ProviderBookingsRequested({required this.userId, required this.role});
+
+  final String userId;
+  final UserRole role;
+
+  @override
+  List<Object?> get props => [userId, role];
+}
+
 class BookingCreated extends BookingEvent {
   const BookingCreated(this.booking);
 
