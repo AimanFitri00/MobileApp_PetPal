@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../models/vet_profile.dart';
+import '../../models/app_user.dart';
 import '../../repositories/vet_repository.dart';
 
 part 'vet_event.dart';

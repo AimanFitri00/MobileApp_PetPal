@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../models/sitter_profile.dart';
+import '../../models/app_user.dart';
 import '../../repositories/sitter_repository.dart';
 
 part 'sitter_event.dart';

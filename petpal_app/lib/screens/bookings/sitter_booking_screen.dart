@@ -5,7 +5,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/booking/booking_bloc.dart';
 import '../../blocs/pet/pet_bloc.dart';
 import '../../models/booking.dart';
-import '../../models/sitter_profile.dart';
+import '../../models/app_user.dart';
 import '../../widgets/primary_button.dart';
 import 'booking_summary_screen.dart';
 
@@ -40,7 +40,7 @@ class _SitterBookingScreenState extends State<SitterBookingScreen> {
     }
   }
 
-  void _submit(SitterProfile sitter) {
+  void _submit(AppUser sitter) {
     if (_dateRange == null) return;
     final ownerId = context.read<AuthBloc>().state.user?.id;
     if (ownerId == null || _selectedPetId == null) return;
@@ -48,7 +48,7 @@ class _SitterBookingScreenState extends State<SitterBookingScreen> {
       id: '',
       ownerId: ownerId,
       petId: _selectedPetId!,
-      sitterId: sitter.userId,
+      sitterId: sitter.id,
       startDate: _dateRange!.start,
       endDate: _dateRange!.end,
       status: BookingStatus.pending,
@@ -64,11 +64,11 @@ class _SitterBookingScreenState extends State<SitterBookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sitter = ModalRoute.of(context)!.settings.arguments as SitterProfile;
+    final sitter = ModalRoute.of(context)!.settings.arguments as AppUser;
     final pets = context.watch<PetBloc>().state.pets;
     _selectedPetId = _selectedPetId ?? (pets.isNotEmpty ? pets.first.id : null);
     return Scaffold(
-      appBar: AppBar(title: Text('Book ${sitter.userId}')),
+      appBar: AppBar(title: Text('Book ${sitter.name}')),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -90,7 +90,7 @@ class _SitterBookingScreenState extends State<SitterBookingScreen> {
               title: Text(
                 _dateRange == null
                     ? 'Select dates'
-                    : '${_dateRange!.start} - ${_dateRange!.end}',
+                    : '${_dateRange!.start.toString().split(' ')[0]} - ${_dateRange!.end.toString().split(' ')[0]}',
               ),
               trailing: const Icon(Icons.calendar_today),
               onTap: _pickRange,

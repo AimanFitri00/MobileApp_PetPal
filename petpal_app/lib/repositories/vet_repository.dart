@@ -1,4 +1,4 @@
-import '../models/vet_profile.dart';
+import '../models/app_user.dart';
 import '../services/firestore_service.dart';
 
 class VetRepository {
@@ -6,7 +6,7 @@ class VetRepository {
 
   final FirestoreService _firestoreService;
 
-  Future<List<VetProfile>> fetchVets({
+  Future<List<AppUser>> fetchVets({
     String? location,
     String? specialization,
   }) async {
@@ -26,20 +26,8 @@ class VetRepository {
         return filtered;
       },
     );
-    return snapshot.docs.map((doc) {
-      final data = doc.data();
-      // Map user data to vet profile format
-      // If vet-specific fields don't exist, use defaults or user data
-      final vetData = {
-        'userId': doc.id,
-        'clinicName': data['clinicName'] ?? data['name'] ?? 'Veterinary Clinic',
-        'location': data['location'] ?? data['address'] ?? '',
-        'specialization': data['specialization'] ?? 'General Practice',
-        'schedule': data['schedule'] ?? <String>[],
-        'bio': data['bio'],
-        'certificateUrl': data['certificateUrl'],
-      };
-      return VetProfile.fromMap(doc.id, vetData);
-    }).toList();
+    return snapshot.docs
+        .map((doc) => AppUser.fromMap(doc.id, doc.data()))
+        .toList();
   }
 }

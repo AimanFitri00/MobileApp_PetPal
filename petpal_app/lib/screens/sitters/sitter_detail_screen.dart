@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/sitter_profile.dart';
+import '../../models/app_user.dart';
 import '../bookings/sitter_booking_screen.dart';
 
 class SitterDetailScreen extends StatelessWidget {
@@ -10,24 +10,21 @@ class SitterDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sitter = ModalRoute.of(context)!.settings.arguments as SitterProfile;
+    final sitter = ModalRoute.of(context)!.settings.arguments as AppUser;
     return Scaffold(
-      appBar: AppBar(title: Text(sitter.userId)),
+      appBar: AppBar(title: Text(sitter.name)),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Experience: ${sitter.experience}'),
-            Text('Location: ${sitter.location}'),
-            Text('Pricing: ${sitter.pricing}'),
+            Text('Experience: ${sitter.experience ?? 'Not specified'}'),
+            Text('Location: ${sitter.address ?? 'Not specified'}'),
+            Text('Pricing: \$${sitter.pricing ?? '0'}/hr'),
             const SizedBox(height: 12),
-            Text('Services', style: Theme.of(context).textTheme.titleMedium),
+            Text('Service Area', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            if (sitter.services != null)
-              ...sitter.services!.map(Text.new)
-            else
-              const Text('No services listed'),
+            Text(sitter.serviceArea ?? 'Not specified'),
             const Spacer(),
             SizedBox(
               width: double.infinity,

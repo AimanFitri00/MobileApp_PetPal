@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/vet/vet_bloc.dart';
-import '../../models/vet_profile.dart';
+import '../../models/app_user.dart';
 import '../../widgets/empty_state.dart';
 import 'vet_detail_screen.dart';
 
@@ -92,15 +92,15 @@ class _VetListScreenState extends State<VetListScreen> {
 class _VetCard extends StatelessWidget {
   const _VetCard({required this.vet});
 
-  final VetProfile vet;
+  final AppUser vet;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
-        title: Text(vet.clinicName),
-        subtitle: Text('${vet.location} • ${vet.specialization}'),
+        title: Text(vet.name),
+        subtitle: Text('${vet.clinicLocation ?? vet.address} • ${vet.specialization}'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.pushNamed(
           context,

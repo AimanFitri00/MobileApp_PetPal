@@ -10,12 +10,12 @@ class VetState extends Equatable {
   const VetState.initial() : this(isLoading: false, vets: const []);
 
   final bool isLoading;
-  final List<VetProfile> vets;
+  final List<AppUser> vets;
   final String? errorMessage;
 
   VetState copyWith({
     bool? isLoading,
-    List<VetProfile>? vets,
+    List<AppUser>? vets,
     String? errorMessage,
   }) {
     return VetState(

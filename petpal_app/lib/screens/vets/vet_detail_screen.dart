@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/vet_profile.dart';
+import '../../models/app_user.dart';
 import '../bookings/vet_booking_screen.dart';
 
 class VetDetailScreen extends StatelessWidget {
@@ -10,23 +10,23 @@ class VetDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vet = ModalRoute.of(context)!.settings.arguments as VetProfile;
+    final vet = ModalRoute.of(context)!.settings.arguments as AppUser;
     return Scaffold(
-      appBar: AppBar(title: Text(vet.clinicName)),
+      appBar: AppBar(title: Text(vet.name)),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              vet.specialization,
+              vet.specialization ?? 'General Practice',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            Text('Location: ${vet.location}'),
+            Text('Location: ${vet.clinicLocation ?? vet.address}'),
             const SizedBox(height: 16),
             Text('Schedule', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            ...vet.schedule.map(Text.new),
+            Text(vet.schedule ?? 'No schedule available'),
             const Spacer(),
             SizedBox(
               width: double.infinity,

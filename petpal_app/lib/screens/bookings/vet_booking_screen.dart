@@ -5,7 +5,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/booking/booking_bloc.dart';
 import '../../blocs/pet/pet_bloc.dart';
 import '../../models/booking.dart';
-import '../../models/vet_profile.dart';
+import '../../models/app_user.dart';
 import '../../screens/bookings/booking_summary_screen.dart';
 import '../../widgets/primary_button.dart';
 
@@ -31,14 +31,14 @@ class _VetBookingScreenState extends State<VetBookingScreen> {
     super.dispose();
   }
 
-  void _submit(VetProfile vet) {
+  void _submit(AppUser vet) {
     final ownerId = context.read<AuthBloc>().state.user?.id;
     if (ownerId == null || _selectedPetId == null) return;
     final booking = Booking.vet(
       id: '',
       ownerId: ownerId,
       petId: _selectedPetId!,
-      vetId: vet.userId,
+      vetId: vet.id,
       date: _selectedDate,
       time: _timeController.text,
       notes: _notesController.text,
@@ -54,11 +54,11 @@ class _VetBookingScreenState extends State<VetBookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final vet = ModalRoute.of(context)!.settings.arguments as VetProfile;
+    final vet = ModalRoute.of(context)!.settings.arguments as AppUser;
     final pets = context.watch<PetBloc>().state.pets;
     _selectedPetId = _selectedPetId ?? (pets.isNotEmpty ? pets.first.id : null);
     return Scaffold(
-      appBar: AppBar(title: Text('Book ${vet.clinicName}')),
+      appBar: AppBar(title: Text('Book ${vet.name}')),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

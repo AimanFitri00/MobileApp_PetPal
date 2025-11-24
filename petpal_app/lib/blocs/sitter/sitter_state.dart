@@ -10,12 +10,12 @@ class SitterState extends Equatable {
   const SitterState.initial() : this(isLoading: false, sitters: const []);
 
   final bool isLoading;
-  final List<SitterProfile> sitters;
+  final List<AppUser> sitters;
   final String? errorMessage;
 
   SitterState copyWith({
     bool? isLoading,
-    List<SitterProfile>? sitters,
+    List<AppUser>? sitters,
     String? errorMessage,
   }) {
     return SitterState(

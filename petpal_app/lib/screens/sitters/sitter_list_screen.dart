@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/sitter/sitter_bloc.dart';
-import '../../models/sitter_profile.dart';
+import '../../models/app_user.dart';
 import '../../widgets/empty_state.dart';
 import 'sitter_detail_screen.dart';
 
@@ -33,7 +33,7 @@ class _SitterListScreenState extends State<SitterListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Browse pet sitters')),
+      appBar: AppBar(title: const Text('Find Pet Sitters')),
       body: Column(
         children: [
           Padding(
@@ -58,7 +58,9 @@ class _SitterListScreenState extends State<SitterListScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (state.sitters.isEmpty) {
-                  return const EmptyState(message: 'No sitters available.');
+                  return const EmptyState(
+                    message: 'No sitters match your filters.',
+                  );
                 }
                 return ListView.builder(
                   itemCount: state.sitters.length,
@@ -77,15 +79,17 @@ class _SitterListScreenState extends State<SitterListScreen> {
 class _SitterCard extends StatelessWidget {
   const _SitterCard({required this.sitter});
 
-  final SitterProfile sitter;
+  final AppUser sitter;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
-        title: Text(sitter.userId),
-        subtitle: Text('${sitter.experience} • ${sitter.pricing}'),
+        title: Text(sitter.name),
+        subtitle: Text(
+          '${sitter.serviceArea ?? sitter.address} • \$${sitter.pricing ?? '0'}/hr',
+        ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.pushNamed(
           context,
