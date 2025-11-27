@@ -25,6 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
+  late TextEditingController _birthdayController;
 
   // Vet controllers
   late TextEditingController _specializationController;
@@ -41,6 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _birthdayController.dispose();
     _specializationController.dispose();
     _clinicLocationController.dispose();
     _scheduleController.dispose();
@@ -63,6 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController = TextEditingController(text: user?.name);
     _phoneController = TextEditingController(text: user?.phone);
     _addressController = TextEditingController(text: user?.address);
+    _birthdayController = TextEditingController(text: user?.birthday);
     
     // Vet init
     _specializationController = TextEditingController(text: user?.specialization);
@@ -78,6 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _uploadImage() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result == null) return;
+    if (!mounted) return;
     context.read<ProfileBloc>().add(
       ProfileImageUploaded(File(result.files.single.path!)),
     );
@@ -92,6 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       name: _nameController.text.trim(),
       phone: _phoneController.text.trim(),
       address: _addressController.text.trim(),
+      birthday: _birthdayController.text.trim(),
       specialization: _specializationController.text.trim(),
       clinicLocation: _clinicLocationController.text.trim(),
       schedule: _scheduleController.text.trim(),
@@ -102,10 +107,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     bloc.add(ProfileUpdated(updated));
   }
 
+  void _openSettings() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.lock_reset),
+            title: const Text('Reset Password'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/forgot_password');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.notifications),
+            title: const Text('Notifications'),
+            trailing: Switch(value: true, onChanged: (val) {}), // Mock
+          ),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Logout', style: TextStyle(color: Colors.red)),
+            onTap: () {
+              Navigator.pop(context);
+              context.read<AuthBloc>().add(const AuthLogoutRequested());
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (route) => false,
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        title: const Text('Profile'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: _openSettings,
+          ),
+        ],
+      ),
       body: BlocBuilder<ProfileBloc, ProfileState>(
         builder: (context, state) {
           if (state.isLoading && state.user == null) {
@@ -153,6 +204,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       AppTextField(
                         controller: _addressController,
                         label: 'Address',
+                      ),
+                      const SizedBox(height: 16),
+                      AppTextField(
+                        controller: _birthdayController,
+                        label: 'Birthday (YYYY-MM-DD)',
                       ),
                       if (user.role == UserRole.vet) ...[
                         const SizedBox(height: 16),

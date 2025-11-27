@@ -157,7 +157,12 @@ class PetPalApp extends StatelessWidget {
               storageService: storageService,
             ),
           ),
-          BlocProvider(create: (_) => PetBloc(petRepository)),
+          BlocProvider(
+            create: (_) => PetBloc(
+              petRepository: petRepository,
+              storageService: storageService,
+            ),
+          ),
           BlocProvider(create: (_) => VetBloc(vetRepository)),
           BlocProvider(create: (_) => SitterBloc(sitterRepository)),
           BlocProvider(create: (_) => BookingBloc(bookingRepository)),
@@ -171,6 +176,7 @@ class PetPalApp extends StatelessWidget {
         ],
         child: MaterialApp(
           title: 'PetPal',
+          debugShowCheckedModeBanner: false,
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
             useMaterial3: true,

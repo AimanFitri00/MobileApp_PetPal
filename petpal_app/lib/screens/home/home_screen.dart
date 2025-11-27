@@ -6,12 +6,13 @@ import '../../blocs/pet/pet_bloc.dart';
 import '../../blocs/profile/profile_bloc.dart';
 import '../../repositories/user_repository.dart';
 import '../../services/notification_service.dart';
-import '../pets/pet_list_screen.dart';
+import '../bookings/provider_dashboard_screen.dart';
+import '../profile/profile_screen.dart';
 import '../reports/report_dashboard_screen.dart';
 import '../sitters/sitter_list_screen.dart';
 import '../vets/vet_list_screen.dart';
-import '../bookings/provider_dashboard_screen.dart';
 import '../../models/app_user.dart';
+import 'owner_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,7 +24,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _index = 0;
+  int _index = 2; // Default to Home (index 2)
 
   @override
   Widget build(BuildContext context) {
@@ -47,40 +48,45 @@ class _HomeScreenState extends State<HomeScreen> {
           final isProvider =
               user?.role == UserRole.vet || user?.role == UserRole.sitter;
 
+          // Navigation Order: Vets, Sitters, Home, Profile, Reports
           final pages = [
-            if (isProvider) const ProviderDashboardScreen(),
-            const PetListScreen(),
             const VetListScreen(),
             const SitterListScreen(),
+            if (isProvider) const ProviderDashboardScreen() else const OwnerDashboardScreen(),
+            const ProfileScreen(),
             const ReportDashboardScreen(),
           ];
 
           final destinations = [
-            if (isProvider)
-              const NavigationDestination(
-                icon: Icon(Icons.dashboard_outlined),
-                label: 'Dashboard',
-              ),
             const NavigationDestination(
-              icon: Icon(Icons.pets_outlined),
-              label: 'Pets',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.medical_information_outlined),
+              icon: Icon(Icons.medical_services_outlined),
+              selectedIcon: Icon(Icons.medical_services),
               label: 'Vets',
             ),
             const NavigationDestination(
               icon: Icon(Icons.home_work_outlined),
+              selectedIcon: Icon(Icons.home_work),
               label: 'Sitters',
             ),
             const NavigationDestination(
-              icon: Icon(Icons.bar_chart),
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Profile',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.bar_chart_outlined),
+              selectedIcon: Icon(Icons.bar_chart),
               label: 'Reports',
             ),
           ];
 
           // Ensure index is valid
-          if (_index >= pages.length) _index = 0;
+          if (_index >= pages.length) _index = 2;
 
           return Scaffold(
             body: pages[_index],

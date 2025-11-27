@@ -11,6 +11,7 @@ class AppUser extends Equatable {
     this.phone,
     this.address,
     this.profileImageUrl,
+    this.birthday,
     // Vet specific
     this.specialization,
     this.clinicLocation,
@@ -33,6 +34,7 @@ class AppUser extends Equatable {
       phone: data['phone'] as String?,
       address: data['address'] as String?,
       profileImageUrl: data['profileImageUrl'] as String?,
+      birthday: data['birthday'] as String?,
       specialization: data['specialization'] as String?,
       clinicLocation: data['clinicLocation'] as String?,
       schedule: data['schedule'] as String?,
@@ -49,6 +51,7 @@ class AppUser extends Equatable {
   final String? phone;
   final String? address;
   final String? profileImageUrl;
+  final String? birthday;
   
   // Vet specific
   final String? specialization;
@@ -68,6 +71,7 @@ class AppUser extends Equatable {
       'phone': phone,
       'address': address,
       'profileImageUrl': profileImageUrl,
+      'birthday': birthday,
       'specialization': specialization,
       'clinicLocation': clinicLocation,
       'schedule': schedule,
@@ -84,6 +88,7 @@ class AppUser extends Equatable {
     String? phone,
     String? address,
     String? profileImageUrl,
+    String? birthday,
     String? specialization,
     String? clinicLocation,
     String? schedule,
@@ -99,6 +104,7 @@ class AppUser extends Equatable {
       phone: phone ?? this.phone,
       address: address ?? this.address,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      birthday: birthday ?? this.birthday,
       specialization: specialization ?? this.specialization,
       clinicLocation: clinicLocation ?? this.clinicLocation,
       schedule: schedule ?? this.schedule,
@@ -117,6 +123,7 @@ class AppUser extends Equatable {
     phone,
     address,
     profileImageUrl,
+    birthday,
     specialization,
     clinicLocation,
     schedule,

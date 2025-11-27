@@ -42,3 +42,12 @@ class PetDeleted extends PetEvent {
   @override
   List<Object?> get props => [petId];
 }
+
+class PetImageSelected extends PetEvent {
+  const PetImageSelected(this.image);
+
+  final File image;
+
+  @override
+  List<Object?> get props => [image];
+}

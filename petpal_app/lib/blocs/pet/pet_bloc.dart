@@ -1,22 +1,32 @@
+import 'dart:io';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/pet.dart';
 import '../../repositories/pet_repository.dart';
+import '../../services/storage_service.dart';
 
 part 'pet_event.dart';
 part 'pet_state.dart';
 
 class PetBloc extends Bloc<PetEvent, PetState> {
-  PetBloc(this._petRepository) : super(const PetState.initial()) {
+  PetBloc({
+    required PetRepository petRepository,
+    required StorageService storageService,
+  })  : _petRepository = petRepository,
+        _storageService = storageService,
+        super(const PetState.initial()) {
     on<PetsRequested>(_onPetsRequested);
     on<PetCreated>(_onPetCreated);
     on<PetUpdated>(_onPetUpdated);
     on<PetDeleted>(_onPetDeleted);
+    on<PetImageSelected>(_onImageSelected);
   }
 
   final PetRepository _petRepository;
+  final StorageService _storageService;
   final _uuid = const Uuid();
 
   Future<void> _onPetsRequested(
@@ -65,6 +75,22 @@ class PetBloc extends Bloc<PetEvent, PetState> {
       await _petRepository.deletePet(event.petId);
       final updated = state.pets.where((pet) => pet.id != event.petId).toList();
       emit(state.copyWith(isLoading: false, pets: updated));
+    } catch (error) {
+      emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onImageSelected(
+    PetImageSelected event,
+    Emitter<PetState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true));
+    try {
+      final url = await _storageService.uploadFile(
+        file: event.image,
+        path: 'pets/${_uuid.v4()}',
+      );
+      emit(state.copyWith(isLoading: false, uploadedImageUrl: url));
     } catch (error) {
       emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }

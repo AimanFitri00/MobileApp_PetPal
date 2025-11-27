@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
@@ -50,10 +53,23 @@ class _PetFormScreenState extends State<PetFormScreen> {
     super.dispose();
   }
 
+  Future<void> _uploadImage() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.image);
+    if (result == null) return;
+    if (!mounted) return;
+    context.read<PetBloc>().add(
+      PetImageSelected(File(result.files.single.path!)),
+    );
+  }
+
   void _save() {
     if (!_formKey.currentState!.validate()) return;
     final bloc = context.read<PetBloc>();
     final ownerId = context.read<AuthBloc>().state.user?.id ?? '';
+    
+    // Use uploaded image URL if available, otherwise keep existing or null
+    final imageUrl = bloc.state.uploadedImageUrl ?? widget.pet?.imageUrl;
+
     final pet = Pet(
       id: widget.pet?.id ?? _uuid.v4(),
       ownerId: ownerId,
@@ -62,6 +78,7 @@ class _PetFormScreenState extends State<PetFormScreen> {
       breed: _breedController.text.trim(),
       age: _ageController.text.trim(),
       medicalHistory: _historyController.text.trim(),
+      imageUrl: imageUrl,
     );
     if (widget.pet == null) {
       bloc.add(PetCreated(pet));
@@ -75,39 +92,67 @@ class _PetFormScreenState extends State<PetFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.pet == null ? 'Add pet' : 'Edit pet')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              AppTextField(
-                controller: _nameController,
-                label: 'Name',
-                validator: (value) =>
-                    AppValidators.required(value, fieldName: 'Name'),
+      body: BlocBuilder<PetBloc, PetState>(
+        builder: (context, state) {
+          final displayImage = state.uploadedImageUrl ?? widget.pet?.imageUrl;
+          
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: _uploadImage,
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundImage: displayImage != null
+                          ? NetworkImage(displayImage)
+                          : null,
+                      child: displayImage == null
+                          ? const Icon(Icons.pets, size: 50)
+                          : null,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: _uploadImage,
+                    icon: const Icon(Icons.upload),
+                    label: const Text('Upload photo'),
+                  ),
+                  const SizedBox(height: 24),
+                  AppTextField(
+                    controller: _nameController,
+                    label: 'Name',
+                    validator: (value) =>
+                        AppValidators.required(value, fieldName: 'Name'),
+                  ),
+                  const SizedBox(height: 16),
+                  AppTextField(controller: _speciesController, label: 'Species'),
+                  const SizedBox(height: 16),
+                  AppTextField(controller: _breedController, label: 'Breed'),
+                  const SizedBox(height: 16),
+                  AppTextField(
+                    controller: _ageController,
+                    label: 'Age',
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  AppTextField(
+                    controller: _historyController,
+                    label: 'Medical history',
+                    maxLines: 4,
+                  ),
+                  const SizedBox(height: 32),
+                  PrimaryButton(
+                    label: 'Save',
+                    isLoading: state.isLoading,
+                    onPressed: _save,
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              AppTextField(controller: _speciesController, label: 'Species'),
-              const SizedBox(height: 16),
-              AppTextField(controller: _breedController, label: 'Breed'),
-              const SizedBox(height: 16),
-              AppTextField(
-                controller: _ageController,
-                label: 'Age',
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                controller: _historyController,
-                label: 'Medical history',
-                maxLines: 4,
-              ),
-              const Spacer(),
-              PrimaryButton(label: 'Save', onPressed: _save),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

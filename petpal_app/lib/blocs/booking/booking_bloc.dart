@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models/booking.dart';
+import '../../models/app_user.dart';
 import '../../repositories/booking_repository.dart';
 
 part 'booking_event.dart';
