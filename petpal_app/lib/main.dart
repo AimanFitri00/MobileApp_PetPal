@@ -30,6 +30,7 @@ import 'repositories/vet_repository.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/auth/reset_password_screen.dart';
 import 'screens/bookings/appointment_history_screen.dart';
 import 'screens/bookings/booking_summary_screen.dart';
 import 'screens/bookings/sitter_booking_screen.dart';
@@ -186,6 +187,7 @@ class PetPalApp extends StatelessWidget {
             LoginScreen.routeName: (_) => const LoginScreen(),
             RegisterScreen.routeName: (_) => const RegisterScreen(),
             ForgotPasswordScreen.routeName: (_) => const ForgotPasswordScreen(),
+            ResetPasswordScreen.routeName: (_) => const ResetPasswordScreen(),
             HomeScreen.routeName: (_) => const HomeScreen(),
             ProfileScreen.routeName: (_) => const ProfileScreen(),
             PetListScreen.routeName: (_) => const PetListScreen(),

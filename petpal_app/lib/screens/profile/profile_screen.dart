@@ -118,7 +118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             title: const Text('Reset Password'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/forgot_password');
+              Navigator.pushNamed(context, '/reset_password');
             },
           ),
           ListTile(

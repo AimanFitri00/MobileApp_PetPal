@@ -48,13 +48,13 @@ class _HomeScreenState extends State<HomeScreen> {
           final isProvider =
               user?.role == UserRole.vet || user?.role == UserRole.sitter;
 
-          // Navigation Order: Vets, Sitters, Home, Profile, Reports
+          // Navigation Order: Vets, Sitters, Home, Reports, Profile
           final pages = [
             const VetListScreen(),
             const SitterListScreen(),
             if (isProvider) const ProviderDashboardScreen() else const OwnerDashboardScreen(),
-            const ProfileScreen(),
             const ReportDashboardScreen(),
+            const ProfileScreen(),
           ];
 
           final destinations = [
@@ -74,14 +74,14 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'Home',
             ),
             const NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-            const NavigationDestination(
               icon: Icon(Icons.bar_chart_outlined),
               selectedIcon: Icon(Icons.bar_chart),
               label: 'Reports',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person),
+              label: 'Profile',
             ),
           ];
 
