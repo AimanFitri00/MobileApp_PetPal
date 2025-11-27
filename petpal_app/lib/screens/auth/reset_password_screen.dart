@@ -25,7 +25,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
-  String? _successMessage;
 
   @override
   void dispose() {
@@ -35,13 +34,25 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    // Add listeners to trigger UI updates
+    _newPasswordController.addListener(() => setState(() {}));
+    _confirmPasswordController.addListener(() => setState(() {}));
+  }
+
+  bool get _hasMinLength => _newPasswordController.text.length >= 6;
+  bool get _passwordsMatch => 
+      _newPasswordController.text.isNotEmpty &&
+      _newPasswordController.text == _confirmPasswordController.text;
+
   Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
       _errorMessage = null;
-      _successMessage = null;
     });
 
     try {
@@ -62,24 +73,33 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
       setState(() {
         _isLoading = false;
-        _successMessage = 'Password updated successfully!';
       });
 
-      // Clear fields
-      _oldPasswordController.clear();
-      _newPasswordController.clear();
-      _confirmPasswordController.clear();
-
-      // Navigate back after delay
-      await Future.delayed(const Duration(seconds: 2));
+      // Show success dialog
       if (mounted) {
-        Navigator.pop(context);
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text('Success'),
+            content: const Text('Your password has been successfully changed.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Go back to profile
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
         _isLoading = false;
         if (e.code == 'wrong-password') {
-          _errorMessage = 'Old password is incorrect';
+          _errorMessage = 'Current password is incorrect';
         } else if (e.code == 'weak-password') {
           _errorMessage = 'New password is too weak';
         } else {
@@ -94,6 +114,19 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     }
   }
 
+  String? _validateNewPassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter a new password';
+    }
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    if (value == _oldPasswordController.text) {
+      return 'New password cannot be the same as old password';
+    }
+    return null;
+  }
+
   String? _validateConfirmPassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Please confirm your password';
@@ -102,6 +135,26 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       return 'Passwords do not match';
     }
     return null;
+  }
+
+  Widget _buildValidationIndicator(String label, bool isValid, bool showCheck) {
+    return Row(
+      children: [
+        Icon(
+          showCheck ? Icons.check_circle : Icons.cancel,
+          size: 20,
+          color: showCheck ? Colors.green : Colors.red,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: showCheck ? Colors.green : Colors.red,
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -134,15 +187,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 controller: _newPasswordController,
                 label: 'New Password',
                 obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a new password';
-                  }
-                  if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
-                  }
-                  return null;
-                },
+                validator: _validateNewPassword,
               ),
               const SizedBox(height: 16),
               AppTextField(
@@ -150,6 +195,40 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 label: 'Confirm New Password',
                 obscureText: true,
                 validator: _validateConfirmPassword,
+              ),
+              const SizedBox(height: 24),
+              // Validation indicators
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Password Requirements:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildValidationIndicator(
+                      'At least 6 characters',
+                      _hasMinLength,
+                      _hasMinLength,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildValidationIndicator(
+                      'Passwords match',
+                      _passwordsMatch,
+                      _passwordsMatch,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               if (_errorMessage != null)
@@ -164,20 +243,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   child: Text(
                     _errorMessage!,
                     style: TextStyle(color: Colors.red.shade900),
-                  ),
-                ),
-              if (_successMessage != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green.shade200),
-                  ),
-                  child: Text(
-                    _successMessage!,
-                    style: TextStyle(color: Colors.green.shade900),
                   ),
                 ),
               PrimaryButton(
