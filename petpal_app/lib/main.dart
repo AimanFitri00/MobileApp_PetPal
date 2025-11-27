@@ -33,7 +33,6 @@ import 'screens/auth/register_screen.dart';
 import 'screens/bookings/appointment_history_screen.dart';
 import 'screens/bookings/booking_summary_screen.dart';
 import 'screens/bookings/sitter_booking_screen.dart';
-import 'screens/bookings/sitter_booking_screen.dart';
 import 'screens/bookings/vet_booking_screen.dart';
 import 'screens/bookings/provider_dashboard_screen.dart';
 import 'screens/home/home_screen.dart';
