@@ -23,6 +23,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  AutovalidateMode _autoValidateMode = AutovalidateMode.disabled;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -38,6 +39,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   void initState() {
     super.initState();
     // Add listeners to trigger UI updates
+    _oldPasswordController.addListener(() => setState(() {}));
     _newPasswordController.addListener(() => setState(() {}));
     _confirmPasswordController.addListener(() => setState(() {}));
   }
@@ -46,8 +48,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool get _passwordsMatch => 
       _newPasswordController.text.isNotEmpty &&
       _newPasswordController.text == _confirmPasswordController.text;
+  bool get _isNewPasswordDifferent =>
+      _newPasswordController.text.isEmpty || 
+      _newPasswordController.text != _oldPasswordController.text;
 
   Future<void> _resetPassword() async {
+    setState(() {
+      _autoValidateMode = AutovalidateMode.onUserInteraction;
+    });
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -167,6 +176,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
+          autovalidateMode: _autoValidateMode,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -226,6 +236,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       'Passwords match',
                       _passwordsMatch,
                       _passwordsMatch,
+                    ),
+                    const SizedBox(height: 8),
+                    _buildValidationIndicator(
+                      'Different from current password',
+                      _isNewPasswordDifferent,
+                      _isNewPasswordDifferent,
                     ),
                   ],
                 ),
