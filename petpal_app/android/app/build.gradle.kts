@@ -62,5 +62,5 @@ dependencies {
     // https://firebase.google.com/docs/android/setup#available-libraries
 
     // Java 8 desugaring support for flutter_local_notifications
-    oreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
