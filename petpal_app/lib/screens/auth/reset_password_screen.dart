@@ -1,10 +1,5 @@
-import 'dart:io';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../blocs/auth/auth_bloc.dart';
 import '../../utils/app_validators.dart';
 import '../../widgets/app_text_field.dart';
 import '../../widgets/primary_button.dart';
@@ -45,11 +40,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   bool get _hasMinLength => _newPasswordController.text.length >= 6;
-  bool get _passwordsMatch => 
+  bool get _passwordsMatch =>
       _newPasswordController.text.isNotEmpty &&
       _newPasswordController.text == _confirmPasswordController.text;
   bool get _isNewPasswordDifferent =>
-      _newPasswordController.text.isEmpty || 
+      _newPasswordController.text.isEmpty ||
       _newPasswordController.text != _oldPasswordController.text;
 
   Future<void> _resetPassword() async {
@@ -169,9 +164,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reset Password'),
-      ),
+      appBar: AppBar(title: const Text('Reset Password')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -189,8 +182,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 controller: _oldPasswordController,
                 label: 'Current Password',
                 obscureText: true,
-                validator: (value) =>
-                    AppValidators.required(value, fieldName: 'Current password'),
+                validator: (value) => AppValidators.required(
+                  value,
+                  fieldName: 'Current password',
+                ),
               ),
               const SizedBox(height: 16),
               AppTextField(
