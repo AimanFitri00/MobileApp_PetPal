@@ -33,4 +33,26 @@ class UserRepository {
       },
     );
   }
+
+  Future<AppUser?> searchUserByEmailOrPhone(String query) async {
+    // Try email first
+    var snapshot = await _firestoreService.queryCollection(
+      collection: _firestoreService.usersRef(),
+      builder: (q) => q.where('email', isEqualTo: query).limit(1),
+    );
+    if (snapshot.docs.isNotEmpty) {
+      return AppUser.fromMap(snapshot.docs.first.id, snapshot.docs.first.data());
+    }
+    
+    // Try phone
+    snapshot = await _firestoreService.queryCollection(
+      collection: _firestoreService.usersRef(),
+      builder: (q) => q.where('phone', isEqualTo: query).limit(1),
+    );
+    if (snapshot.docs.isNotEmpty) {
+      return AppUser.fromMap(snapshot.docs.first.id, snapshot.docs.first.data());
+    }
+    
+    return null;
+  }
 }

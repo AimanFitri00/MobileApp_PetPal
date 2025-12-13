@@ -8,6 +8,8 @@ import '../../utils/app_validators.dart';
 import '../../utils/dialog_utils.dart';
 import '../../widgets/app_text_field.dart';
 import '../../widgets/primary_button.dart';
+import '../vets/vet_profile_setup_screen.dart';
+import '../../screens/sitters/sitter_profile_setup_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -137,6 +139,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
     if (picked != null) {
       _dobController.text = picked.toIso8601String().split('T').first;
+      
+      // Auto-calculate age
+      final now = DateTime.now();
+      int age = now.year - picked.year;
+      if (now.month < picked.month || (now.month == picked.month && now.day < picked.day)) {
+        age--;
+      }
+      _ageController.text = age.toString();
     }
   }
 
@@ -151,7 +161,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               DialogUtils.showErrorDialog(context, state.errorMessage!);
             }
             if (state.status == AuthStatus.authenticated) {
-              Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+              if (state.user?.role == UserRole.vet) {
+                Navigator.pushReplacementNamed(context, VetProfileSetupScreen.routeName);
+              } else if (state.user?.role == UserRole.sitter) {
+                 Navigator.pushReplacementNamed(context, SitterProfileSetupScreen.routeName);
+              } else {
+                Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+              }
             }
           },
           child: SingleChildScrollView(
@@ -168,6 +184,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onChanged: (role) => setState(() => _role = role ?? UserRole.owner),
                     items: const [
                        DropdownMenuItem(value: UserRole.owner, child: Text('Pet Owner')),
+                       DropdownMenuItem(value: UserRole.vet, child: Text('Veterinarian')),
+                       DropdownMenuItem(value: UserRole.sitter, child: Text('Pet Sitter')),
                     ],
                   ),
                   const SizedBox(height: 24),

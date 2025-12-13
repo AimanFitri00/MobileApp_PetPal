@@ -13,6 +13,8 @@ import '../sitters/sitter_list_screen.dart';
 import '../vets/vet_list_screen.dart';
 import '../../models/app_user.dart';
 import 'owner_dashboard_screen.dart';
+import '../hotel/hotel_screen.dart';
+import '../sitters/sitter_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,7 +26,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _index = 2; // Default to Home (index 2)
+  int _index = 2; // Default to Home for Owner, logic will adjust for Provider
 
   @override
   Widget build(BuildContext context) {
@@ -45,48 +47,110 @@ class _HomeScreenState extends State<HomeScreen> {
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           final user = state.user;
-          final isProvider =
-              user?.role == UserRole.vet || user?.role == UserRole.sitter;
+
 
           // Navigation Order: Vets, Sitters, Home, Reports, Profile
-          final pages = [
-            const VetListScreen(),
-            const SitterListScreen(),
-            if (isProvider) const ProviderDashboardScreen() else const OwnerDashboardScreen(),
-            const ReportDashboardScreen(),
-            const ProfileScreen(),
-          ];
+          List<Widget> pages;
+          List<NavigationDestination> destinations;
 
-          final destinations = [
-            const NavigationDestination(
-              icon: Icon(Icons.medical_services_outlined),
-              selectedIcon: Icon(Icons.medical_services),
-              label: 'Vets',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.home_work_outlined),
-              selectedIcon: Icon(Icons.home_work),
-              label: 'Sitters',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.bar_chart_outlined),
-              selectedIcon: Icon(Icons.bar_chart),
-              label: 'Reports',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ];
-
-          // Ensure index is valid
-          if (_index >= pages.length) _index = 2;
+          if (user?.role == UserRole.vet) {
+             pages = [
+               const ProviderDashboardScreen(),
+               const HotelScreen(),
+               const ProviderDashboardScreen(),
+               const ReportDashboardScreen(),
+               const ProfileScreen(),
+             ];
+             destinations = [
+               const NavigationDestination(
+                 icon: Icon(Icons.calendar_today_outlined),
+                 selectedIcon: Icon(Icons.calendar_today),
+                 label: 'Appointments',
+               ),
+               const NavigationDestination(
+                 icon: Icon(Icons.hotel_outlined),
+                 selectedIcon: Icon(Icons.hotel),
+                 label: 'Hotel',
+               ),
+               const NavigationDestination(
+                 icon: Icon(Icons.home_outlined),
+                 selectedIcon: Icon(Icons.home),
+                 label: 'Home',
+               ),
+               const NavigationDestination(
+                 icon: Icon(Icons.bar_chart_outlined),
+                 selectedIcon: Icon(Icons.bar_chart),
+                 label: 'Reports',
+               ),
+               const NavigationDestination(
+                 icon: Icon(Icons.person_outline),
+                 selectedIcon: Icon(Icons.person),
+                 label: 'Profile',
+               ),
+             ];
+             if (_index >= pages.length) _index = 2; // Default to Home
+          } else if (user?.role == UserRole.sitter) {
+             pages = [
+               const SitterDashboardScreen(),
+               const ReportDashboardScreen(),
+               const ProfileScreen(),
+             ];
+             destinations = [
+               const NavigationDestination(
+                 icon: Icon(Icons.dashboard_outlined),
+                 selectedIcon: Icon(Icons.dashboard),
+                 label: 'Dashboard',
+               ),
+               const NavigationDestination(
+                 icon: Icon(Icons.bar_chart_outlined),
+                 selectedIcon: Icon(Icons.bar_chart),
+                 label: 'Reports',
+               ),
+               const NavigationDestination(
+                 icon: Icon(Icons.person_outline),
+                 selectedIcon: Icon(Icons.person),
+                 label: 'Profile',
+               ),
+             ];
+             if (_index >= pages.length) _index = 0;
+          } else {
+             pages = [
+              const VetListScreen(),
+              const SitterListScreen(),
+              const OwnerDashboardScreen(),
+              const ReportDashboardScreen(),
+              const ProfileScreen(),
+            ];
+            destinations = [
+              const NavigationDestination(
+                icon: Icon(Icons.medical_services_outlined),
+                selectedIcon: Icon(Icons.medical_services),
+                label: 'Vets',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.home_work_outlined),
+                selectedIcon: Icon(Icons.home_work),
+                label: 'Sitters',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.bar_chart_outlined),
+                selectedIcon: Icon(Icons.bar_chart),
+                label: 'Reports',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ];
+            // Ensure index is valid for owner (default to home=2)
+            if (_index >= pages.length) _index = 2; 
+          }
 
           return Scaffold(
             body: pages[_index],
@@ -94,6 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
               selectedIndex: _index,
               onDestinationSelected: (index) => setState(() => _index = index),
               destinations: destinations,
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
             ),
           );
         },

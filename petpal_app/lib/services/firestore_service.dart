@@ -44,4 +44,18 @@ class FirestoreService {
     final query = builder != null ? builder(collection) : collection;
     return query.get();
   }
+
+  Stream<List<T>> collectionStream<T>({
+    required CollectionReference<Map<String, dynamic>> collection,
+    required T Function(String id, Map<String, dynamic> data) fromMap,
+    Query<Map<String, dynamic>> Function(Query<Map<String, dynamic>> query)?
+        builder,
+  }) {
+    final query = builder != null ? builder(collection) : collection;
+    return query.snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) => fromMap(doc.id, doc.data())).toList());
+  }
+
+  CollectionReference<Map<String, dynamic>> collection(String path) =>
+      _firestore.collection(path);
 }

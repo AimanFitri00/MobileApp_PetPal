@@ -38,5 +38,9 @@ service cloud.firestore {
     match /activityLogs/{logId} {
       allow read, write: if isAuthenticated();
     }
+
+    match /hotel_stays/{stayId} {
+      allow read, write: if isAuthenticated();
+    }
   }
 }

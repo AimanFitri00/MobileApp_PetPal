@@ -249,6 +249,8 @@ class OwnerDashboardScreen extends StatelessWidget {
         return Colors.blue;
       case BookingStatus.cancelled:
         return Colors.red;
+      case BookingStatus.rejected:
+        return Colors.red;
     }
   }
 

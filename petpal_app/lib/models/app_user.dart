@@ -17,9 +17,15 @@ class AppUser extends Equatable {
     this.clinicLocation,
     this.schedule,
     // Sitter specific
-    this.experience,
+    this.experience, // experienceDescription
+    this.yearsOfExperience,
     this.pricing,
     this.serviceArea,
+    this.hotelImageUrls,
+    this.petTypesAccepted,
+    this.servicesProvided,
+    this.availableDays,
+    this.availableHours,
   });
 
   factory AppUser.fromMap(String id, Map<String, dynamic> data) {
@@ -38,9 +44,26 @@ class AppUser extends Equatable {
       specialization: data['specialization'] as String?,
       clinicLocation: data['clinicLocation'] as String?,
       schedule: data['schedule'] as String?,
-      experience: data['experience'] as String?,
+      // Sitter
+      experience: data['experience'] as String?, // experienceDescription
+      yearsOfExperience: data['yearsOfExperience'] as int?,
       pricing: (data['pricing'] as num?)?.toDouble(),
       serviceArea: data['serviceArea'] as String?,
+      petTypesAccepted: (data['petTypesAccepted'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      servicesProvided: (data['servicesProvided'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      availableDays: (data['availableDays'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      availableHours: (data['availableHours'] as Map<String, dynamic>?)
+          ?.map((k, v) => MapEntry(k, v as String)),
+          
+      hotelImageUrls: (data['hotelImageUrls'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
   }
 
@@ -57,11 +80,17 @@ class AppUser extends Equatable {
   final String? specialization;
   final String? clinicLocation;
   final String? schedule;
+  final List<String>? hotelImageUrls;
 
   // Sitter specific
-  final String? experience;
+  final String? experience; // Used for Description
+  final int? yearsOfExperience;
   final double? pricing;
   final String? serviceArea;
+  final List<String>? petTypesAccepted;
+  final List<String>? servicesProvided;
+  final List<String>? availableDays;
+  final Map<String, String>? availableHours;
 
   Map<String, dynamic> toMap() {
     return {
@@ -76,8 +105,14 @@ class AppUser extends Equatable {
       'clinicLocation': clinicLocation,
       'schedule': schedule,
       'experience': experience,
+      'yearsOfExperience': yearsOfExperience,
       'pricing': pricing,
       'serviceArea': serviceArea,
+      'hotelImageUrls': hotelImageUrls,
+      'petTypesAccepted': petTypesAccepted,
+      'servicesProvided': servicesProvided,
+      'availableDays': availableDays,
+      'availableHours': availableHours,
     };
   }
 
@@ -93,8 +128,14 @@ class AppUser extends Equatable {
     String? clinicLocation,
     String? schedule,
     String? experience,
+    int? yearsOfExperience,
     double? pricing,
     String? serviceArea,
+    List<String>? hotelImageUrls,
+    List<String>? petTypesAccepted,
+    List<String>? servicesProvided,
+    List<String>? availableDays,
+    Map<String, String>? availableHours,
   }) {
     return AppUser(
       id: id,
@@ -109,8 +150,14 @@ class AppUser extends Equatable {
       clinicLocation: clinicLocation ?? this.clinicLocation,
       schedule: schedule ?? this.schedule,
       experience: experience ?? this.experience,
+      yearsOfExperience: yearsOfExperience ?? this.yearsOfExperience,
       pricing: pricing ?? this.pricing,
       serviceArea: serviceArea ?? this.serviceArea,
+      hotelImageUrls: hotelImageUrls ?? this.hotelImageUrls,
+      petTypesAccepted: petTypesAccepted ?? this.petTypesAccepted,
+      servicesProvided: servicesProvided ?? this.servicesProvided,
+      availableDays: availableDays ?? this.availableDays,
+      availableHours: availableHours ?? this.availableHours,
     );
   }
 
@@ -128,7 +175,13 @@ class AppUser extends Equatable {
     clinicLocation,
     schedule,
     experience,
+    yearsOfExperience,
     pricing,
     serviceArea,
+    hotelImageUrls,
+    petTypesAccepted,
+    servicesProvided,
+    availableDays,
+    availableHours,
   ];
 }

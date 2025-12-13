@@ -14,8 +14,10 @@ import 'blocs/booking/booking_bloc.dart';
 import 'blocs/pet/pet_bloc.dart';
 import 'blocs/profile/profile_bloc.dart';
 import 'blocs/report/report_bloc.dart';
+import 'blocs/report/report_bloc.dart';
 import 'blocs/sitter/sitter_bloc.dart';
 import 'blocs/vet/vet_bloc.dart';
+import 'blocs/hotel/hotel_bloc.dart';
 import 'firebase_options.dart';
 import 'models/app_user.dart';
 import 'models/booking.dart';
@@ -28,12 +30,14 @@ import 'repositories/report_repository.dart';
 import 'repositories/sitter_repository.dart';
 import 'repositories/user_repository.dart';
 import 'repositories/vet_repository.dart';
+import 'repositories/hotel_repository.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/bookings/appointment_history_screen.dart';
 import 'screens/bookings/booking_summary_screen.dart';
+import 'screens/hotel/check_in_screen.dart';
 import 'screens/bookings/sitter_booking_screen.dart';
 import 'screens/bookings/vet_booking_screen.dart';
 import 'screens/bookings/provider_dashboard_screen.dart';
@@ -54,6 +58,8 @@ import 'services/notification_service.dart';
 import 'services/pdf_service.dart';
 import 'services/storage_service.dart';
 import 'screens/profile/edit_profile_screen.dart';
+import 'screens/vets/vet_profile_setup_screen.dart';
+import 'screens/sitters/sitter_profile_setup_screen.dart';
 import 'utils/constants.dart';
 
 void main() async {
@@ -87,6 +93,7 @@ void main() async {
     bookingRepository: bookingRepository,
     activityRepository: activityRepository,
   );
+  final hotelRepository = HotelRepository(firestoreService);
 
   runApp(
     PetPalApp(
@@ -98,6 +105,7 @@ void main() async {
       bookingRepository: bookingRepository,
       activityRepository: activityRepository,
       reportRepository: reportRepository,
+      hotelRepository: hotelRepository,
       storageService: storageService,
       pdfService: PdfService(),
       notificationService: notificationService,
@@ -116,6 +124,7 @@ class PetPalApp extends StatefulWidget {
     required this.bookingRepository,
     required this.activityRepository,
     required this.reportRepository,
+    required this.hotelRepository,
     required this.storageService,
     required this.pdfService,
     required this.notificationService,
@@ -129,6 +138,7 @@ class PetPalApp extends StatefulWidget {
   final BookingRepository bookingRepository;
   final ActivityRepository activityRepository;
   final ReportRepository reportRepository;
+  final HotelRepository hotelRepository;
   final StorageService storageService;
   final PdfService pdfService;
   final NotificationService notificationService;
@@ -157,6 +167,7 @@ class _PetPalAppState extends State<PetPalApp> {
         RepositoryProvider.value(value: widget.bookingRepository),
         RepositoryProvider.value(value: widget.activityRepository),
         RepositoryProvider.value(value: widget.reportRepository),
+        RepositoryProvider.value(value: widget.hotelRepository),
         RepositoryProvider.value(value: widget.storageService),
         RepositoryProvider.value(value: widget.pdfService),
         RepositoryProvider.value(value: widget.notificationService),
@@ -181,7 +192,10 @@ class _PetPalAppState extends State<PetPalApp> {
           ),
           BlocProvider(create: (_) => VetBloc(widget.vetRepository)),
           BlocProvider(create: (_) => SitterBloc(widget.sitterRepository)),
+          BlocProvider(create: (_) => VetBloc(widget.vetRepository)),
+          BlocProvider(create: (_) => SitterBloc(widget.sitterRepository)),
           BlocProvider(create: (_) => BookingBloc(widget.bookingRepository)),
+          BlocProvider(create: (_) => HotelBloc(widget.hotelRepository)),
           BlocProvider(create: (_) => ActivityBloc(widget.activityRepository)),
           BlocProvider(
             create: (_) => ReportBloc(
@@ -221,8 +235,7 @@ class _PetPalAppState extends State<PetPalApp> {
             AppointmentHistoryScreen.routeName: (_) =>
                 const AppointmentHistoryScreen(),
             BookingSummaryScreen.routeName: (context) {
-              final booking =
-                  ModalRoute.of(context)!.settings.arguments as Booking;
+              final booking = ModalRoute.of(context)!.settings.arguments as Booking;
               return BookingSummaryScreen(booking: booking);
             },
             ReportDashboardScreen.routeName: (_) =>
@@ -241,6 +254,9 @@ class _PetPalAppState extends State<PetPalApp> {
                 onSave: args['onSave'] as Function(AppUser),
               );
             },
+            VetProfileSetupScreen.routeName: (_) => const VetProfileSetupScreen(),
+            SitterProfileSetupScreen.routeName: (_) => const SitterProfileSetupScreen(),
+            CheckInScreen.routeName: (_) => const CheckInScreen(),
           },
         ),
       ),

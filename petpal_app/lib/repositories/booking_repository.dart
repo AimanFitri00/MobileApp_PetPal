@@ -65,10 +65,15 @@ class BookingRepository {
         ? _firestoreService.vetBookingsRef()
         : _firestoreService.sitterBookingsRef();
 
+    final data = <String, dynamic>{'status': status.name};
+    if (booking.rejectionReason != null) {
+      data['rejectionReason'] = booking.rejectionReason;
+    }
+
     await _firestoreService.setDocument(
       collection: collection,
       docId: booking.id,
-      data: {'status': status.name},
+      data: data,
     );
   }
 }
