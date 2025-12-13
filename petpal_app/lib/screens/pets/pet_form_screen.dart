@@ -29,7 +29,13 @@ class _PetFormScreenState extends State<PetFormScreen> {
   late TextEditingController _speciesController;
   late TextEditingController _breedController;
   late TextEditingController _ageController;
+  late TextEditingController _weightController;
+  late TextEditingController _allergiesController;
+  late TextEditingController _conditionsController;
   late TextEditingController _historyController;
+  
+  String _gender = 'Female';
+  bool _isVaccinated = false;
   final _uuid = const Uuid();
 
   @override
@@ -40,7 +46,15 @@ class _PetFormScreenState extends State<PetFormScreen> {
     _speciesController = TextEditingController(text: pet?.species);
     _breedController = TextEditingController(text: pet?.breed);
     _ageController = TextEditingController(text: pet?.age);
+    _weightController = TextEditingController(text: pet?.weight.toString());
+    _allergiesController = TextEditingController(text: pet?.allergies);
+    _conditionsController = TextEditingController(text: pet?.medicalConditions);
     _historyController = TextEditingController(text: pet?.medicalHistory);
+    
+    if (pet != null) {
+      _gender = pet.gender;
+      _isVaccinated = pet.isVaccinated;
+    }
   }
 
   @override
@@ -49,6 +63,9 @@ class _PetFormScreenState extends State<PetFormScreen> {
     _speciesController.dispose();
     _breedController.dispose();
     _ageController.dispose();
+    _weightController.dispose();
+    _allergiesController.dispose();
+    _conditionsController.dispose();
     _historyController.dispose();
     super.dispose();
   }
@@ -77,9 +94,16 @@ class _PetFormScreenState extends State<PetFormScreen> {
       species: _speciesController.text.trim(),
       breed: _breedController.text.trim(),
       age: _ageController.text.trim(),
+      gender: _gender,
+      weight: double.tryParse(_weightController.text.trim()) ?? 0.0,
+      isVaccinated: _isVaccinated,
+      allergies: _allergiesController.text.trim(),
+      medicalConditions: _conditionsController.text.trim(),
       medicalHistory: _historyController.text.trim(),
       imageUrl: imageUrl,
+      createdAt: widget.pet?.createdAt ?? DateTime.now(),
     );
+
     if (widget.pet == null) {
       bloc.add(PetCreated(pet));
     } else {
@@ -101,23 +125,34 @@ class _PetFormScreenState extends State<PetFormScreen> {
             child: Form(
               key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  GestureDetector(
-                    onTap: _uploadImage,
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundImage: displayImage != null
-                          ? NetworkImage(displayImage)
-                          : null,
-                      child: displayImage == null
-                          ? const Icon(Icons.pets, size: 50)
-                          : null,
+                   Center(
+                    child: GestureDetector(
+                      onTap: _uploadImage,
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundImage: displayImage != null && displayImage.isNotEmpty
+                                ? NetworkImage(displayImage)
+                                : null,
+                            child: displayImage == null || displayImage.isEmpty
+                                ? const Icon(Icons.pets, size: 50)
+                                : null,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Theme.of(context).primaryColor,
+                              child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  TextButton.icon(
-                    onPressed: _uploadImage,
-                    icon: const Icon(Icons.upload),
-                    label: const Text('Upload photo'),
                   ),
                   const SizedBox(height: 24),
                   AppTextField(
@@ -127,20 +162,70 @@ class _PetFormScreenState extends State<PetFormScreen> {
                         AppValidators.required(value, fieldName: 'Name'),
                   ),
                   const SizedBox(height: 16),
-                  AppTextField(controller: _speciesController, label: 'Species'),
-                  const SizedBox(height: 16),
-                  AppTextField(controller: _breedController, label: 'Breed'),
-                  const SizedBox(height: 16),
-                  AppTextField(
-                    controller: _ageController,
-                    label: 'Age',
-                    keyboardType: TextInputType.number,
+                  Row(
+                    children: [
+                      Expanded(child: AppTextField(controller: _speciesController, label: 'Species')),
+                      const SizedBox(width: 16),
+                      Expanded(child: AppTextField(controller: _breedController, label: 'Breed')),
+                    ],
                   ),
+                  const SizedBox(height: 16),
+                  
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          controller: _ageController,
+                          label: 'Age (years)',
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _gender,
+                          decoration: const InputDecoration(labelText: 'Gender'),
+                          items: ['Male', 'Female'].map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+                          onChanged: (val) => setState(() => _gender = val!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          controller: _weightController,
+                          label: 'Weight (kg)',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                       Expanded(
+                         child: SwitchListTile(
+                          title: const Text('Vaccinated?', style: TextStyle(fontSize: 14)),
+                          value: _isVaccinated,
+                          onChanged: (val) => setState(() => _isVaccinated = val),
+                          contentPadding: EdgeInsets.zero,
+                         ),
+                       ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  const Text('Medical Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 8),
+
+                  AppTextField(controller: _allergiesController, label: 'Allergies (Optional)'),
+                  const SizedBox(height: 16),
+                  AppTextField(controller: _conditionsController, label: 'Medical Conditions (Optional)'),
                   const SizedBox(height: 16),
                   AppTextField(
                     controller: _historyController,
-                    label: 'Medical history',
-                    maxLines: 4,
+                    label: 'Medical Notes (Optional)',
+                    maxLines: 3,
                   ),
                   const SizedBox(height: 32),
                   PrimaryButton(

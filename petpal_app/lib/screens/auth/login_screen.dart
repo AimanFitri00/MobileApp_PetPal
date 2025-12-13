@@ -103,9 +103,14 @@ class _LoginForm extends StatelessWidget {
             const SizedBox(height: 16),
             AppTextField(
               controller: emailController,
-              label: 'Email',
+              label: 'Email or Mobile Number',
               keyboardType: TextInputType.emailAddress,
-              validator: AppValidators.email,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter email or mobile number';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 16),
             AppTextField(

@@ -17,6 +17,7 @@ import 'blocs/report/report_bloc.dart';
 import 'blocs/sitter/sitter_bloc.dart';
 import 'blocs/vet/vet_bloc.dart';
 import 'firebase_options.dart';
+import 'models/app_user.dart';
 import 'models/booking.dart';
 import 'models/pet.dart';
 import 'repositories/activity_repository.dart';
@@ -52,6 +53,7 @@ import 'services/firestore_service.dart';
 import 'services/notification_service.dart';
 import 'services/pdf_service.dart';
 import 'services/storage_service.dart';
+import 'screens/profile/edit_profile_screen.dart';
 import 'utils/constants.dart';
 
 void main() async {
@@ -63,7 +65,8 @@ void main() async {
     FirebaseMessaging.instance,
     FlutterLocalNotificationsPlugin(),
   );
-  await notificationService.initialize();
+  // Don't await here to avoid blocking startup
+  // Initialize in PetPalApp.initState instead
 
   final authService = FirebaseAuthService(FirebaseAuth.instance);
   final firestoreService = FirestoreService(FirebaseFirestore.instance);
@@ -102,7 +105,7 @@ void main() async {
   );
 }
 
-class PetPalApp extends StatelessWidget {
+class PetPalApp extends StatefulWidget {
   const PetPalApp({
     super.key,
     required this.authRepository,
@@ -131,47 +134,59 @@ class PetPalApp extends StatelessWidget {
   final NotificationService notificationService;
 
   @override
+  State<PetPalApp> createState() => _PetPalAppState();
+}
+
+class _PetPalAppState extends State<PetPalApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize notifications without blocking the UI
+    widget.notificationService.initialize();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider.value(value: authRepository),
-        RepositoryProvider.value(value: userRepository),
-        RepositoryProvider.value(value: petRepository),
-        RepositoryProvider.value(value: vetRepository),
-        RepositoryProvider.value(value: sitterRepository),
-        RepositoryProvider.value(value: bookingRepository),
-        RepositoryProvider.value(value: activityRepository),
-        RepositoryProvider.value(value: reportRepository),
-        RepositoryProvider.value(value: storageService),
-        RepositoryProvider.value(value: pdfService),
-        RepositoryProvider.value(value: notificationService),
+        RepositoryProvider.value(value: widget.authRepository),
+        RepositoryProvider.value(value: widget.userRepository),
+        RepositoryProvider.value(value: widget.petRepository),
+        RepositoryProvider.value(value: widget.vetRepository),
+        RepositoryProvider.value(value: widget.sitterRepository),
+        RepositoryProvider.value(value: widget.bookingRepository),
+        RepositoryProvider.value(value: widget.activityRepository),
+        RepositoryProvider.value(value: widget.reportRepository),
+        RepositoryProvider.value(value: widget.storageService),
+        RepositoryProvider.value(value: widget.pdfService),
+        RepositoryProvider.value(value: widget.notificationService),
       ],
-      child: MultiBlocProvider(
+        child: MultiBlocProvider(
         providers: [
           BlocProvider(
             create: (_) =>
-                AuthBloc(authRepository)..add(const AuthStatusRequested()),
+                AuthBloc(widget.authRepository)..add(const AuthStatusRequested()),
           ),
           BlocProvider(
             create: (_) => ProfileBloc(
-              userRepository: userRepository,
-              storageService: storageService,
+              userRepository: widget.userRepository,
+              storageService: widget.storageService,
             ),
           ),
           BlocProvider(
             create: (_) => PetBloc(
-              petRepository: petRepository,
-              storageService: storageService,
+              petRepository: widget.petRepository,
+              storageService: widget.storageService,
             ),
           ),
-          BlocProvider(create: (_) => VetBloc(vetRepository)),
-          BlocProvider(create: (_) => SitterBloc(sitterRepository)),
-          BlocProvider(create: (_) => BookingBloc(bookingRepository)),
-          BlocProvider(create: (_) => ActivityBloc(activityRepository)),
+          BlocProvider(create: (_) => VetBloc(widget.vetRepository)),
+          BlocProvider(create: (_) => SitterBloc(widget.sitterRepository)),
+          BlocProvider(create: (_) => BookingBloc(widget.bookingRepository)),
+          BlocProvider(create: (_) => ActivityBloc(widget.activityRepository)),
           BlocProvider(
             create: (_) => ReportBloc(
-              reportRepository: reportRepository,
-              pdfService: pdfService,
+              reportRepository: widget.reportRepository,
+              pdfService: widget.pdfService,
             ),
           ),
         ],
@@ -181,6 +196,7 @@ class PetPalApp extends StatelessWidget {
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
             useMaterial3: true,
+            fontFamily: 'Roboto',
           ),
           initialRoute: LoginScreen.routeName,
           routes: {
@@ -218,6 +234,13 @@ class PetPalApp extends StatelessWidget {
             },
             ProviderDashboardScreen.routeName: (_) =>
                 const ProviderDashboardScreen(),
+            EditProfileScreen.routeName: (context) {
+              final args = ModalRoute.of(context)!.settings.arguments as Map;
+              return EditProfileScreen(
+                user: args['user'] as AppUser,
+                onSave: args['onSave'] as Function(AppUser),
+              );
+            },
           },
         ),
       ),

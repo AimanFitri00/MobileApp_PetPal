@@ -9,6 +9,8 @@ class AppTextField extends StatelessWidget {
     this.validator,
     this.obscureText = false,
     this.maxLines = 1,
+    this.maxLength,
+    this.hideCounter = false,
   });
 
   final TextEditingController controller;
@@ -17,6 +19,8 @@ class AppTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final bool obscureText;
   final int maxLines;
+  final int? maxLength;
+  final bool hideCounter;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +30,11 @@ class AppTextField extends StatelessWidget {
       validator: validator,
       obscureText: obscureText,
       maxLines: maxLines,
-      decoration: InputDecoration(labelText: label),
+      maxLength: maxLength,
+      decoration: InputDecoration(
+        labelText: label,
+        counterText: hideCounter ? '' : null,
+      ),
     );
   }
 }

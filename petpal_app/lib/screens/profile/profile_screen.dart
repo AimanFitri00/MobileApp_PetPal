@@ -7,9 +7,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/profile/profile_bloc.dart';
 import '../../models/app_user.dart';
+import '../../models/pet.dart';
 import '../../utils/app_validators.dart';
+import '../../blocs/pet/pet_bloc.dart';
 import '../../widgets/app_text_field.dart';
 import '../../widgets/primary_button.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -21,61 +24,16 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _phoneController;
-  late TextEditingController _addressController;
-  late TextEditingController _birthdayController;
-
-  // Vet controllers
-  late TextEditingController _specializationController;
-  late TextEditingController _clinicLocationController;
-  late TextEditingController _scheduleController;
-
-  // Sitter controllers
-  late TextEditingController _experienceController;
-  late TextEditingController _pricingController;
-  late TextEditingController _serviceAreaController;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    _birthdayController.dispose();
-    _specializationController.dispose();
-    _clinicLocationController.dispose();
-    _scheduleController.dispose();
-    _experienceController.dispose();
-    _pricingController.dispose();
-    _serviceAreaController.dispose();
-    super.dispose();
-  }
-
   @override
   void initState() {
     super.initState();
     final authUser = context.read<AuthBloc>().state.user;
     if (authUser != null) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => context.read<ProfileBloc>().add(ProfileRequested(authUser.id)),
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<ProfileBloc>().add(ProfileRequested(authUser.id));
+        context.read<PetBloc>().add(PetsRequested(authUser.id));
+      });
     }
-    final user = context.read<ProfileBloc>().state.user ?? authUser;
-    _nameController = TextEditingController(text: user?.name);
-    _phoneController = TextEditingController(text: user?.phone);
-    _addressController = TextEditingController(text: user?.address);
-    _birthdayController = TextEditingController(text: user?.birthday);
-    
-    // Vet init
-    _specializationController = TextEditingController(text: user?.specialization);
-    _clinicLocationController = TextEditingController(text: user?.clinicLocation);
-    _scheduleController = TextEditingController(text: user?.schedule);
-
-    // Sitter init
-    _experienceController = TextEditingController(text: user?.experience);
-    _pricingController = TextEditingController(text: user?.pricing?.toString());
-    _serviceAreaController = TextEditingController(text: user?.serviceArea);
   }
 
   Future<void> _uploadImage() async {
@@ -87,32 +45,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _save() {
-    if (!_formKey.currentState!.validate()) return;
-    final bloc = context.read<ProfileBloc>();
-    final user = bloc.state.user;
-    if (user == null) return;
-    final updated = user.copyWith(
-      name: _nameController.text.trim(),
-      phone: _phoneController.text.trim(),
-      address: _addressController.text.trim(),
-      birthday: _birthdayController.text.trim(),
-      specialization: _specializationController.text.trim(),
-      clinicLocation: _clinicLocationController.text.trim(),
-      schedule: _scheduleController.text.trim(),
-      experience: _experienceController.text.trim(),
-      pricing: double.tryParse(_pricingController.text.trim()),
-      serviceArea: _serviceAreaController.text.trim(),
+  void _openEditScreen(AppUser user) {
+    Navigator.pushNamed(
+      context,
+      EditProfileScreen.routeName,
+      arguments: {
+        'user': user,
+        'onSave': (AppUser updated) {
+          context.read<ProfileBloc>().add(ProfileUpdated(updated));
+        },
+      },
     );
-    bloc.add(ProfileUpdated(updated));
   }
 
-  void _openSettings() {
+  void _openSettings(AppUser user) {
     showModalBottomSheet(
       context: context,
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          ListTile(
+            leading: const Icon(Icons.edit),
+            title: const Text('Edit Profile'),
+            onTap: () {
+              Navigator.pop(context);
+              _openEditScreen(user);
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.lock_reset),
             title: const Text('Reset Password'),
@@ -151,9 +110,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: const Text('Profile'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: _openSettings,
+          BlocBuilder<ProfileBloc, ProfileState>(
+            builder: (context, state) {
+              return IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: state.user != null ? () => _openSettings(state.user!) : null,
+              );
+            },
           ),
         ],
       ),
@@ -184,83 +147,140 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   label: const Text('Upload photo'),
                 ),
                 const SizedBox(height: 16),
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      AppTextField(
-                        controller: _nameController,
-                        label: 'Full name',
-                        validator: (value) =>
-                            AppValidators.required(value, fieldName: 'Name'),
-                      ),
-                      const SizedBox(height: 16),
-                      AppTextField(
-                        controller: _phoneController,
-                        label: 'Phone',
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 16),
-                      AppTextField(
-                        controller: _addressController,
-                        label: 'Address',
-                      ),
-                      const SizedBox(height: 16),
-                      AppTextField(
-                        controller: _birthdayController,
-                        label: 'Birthday (YYYY-MM-DD)',
-                      ),
-                      if (user.role == UserRole.vet) ...[
-                        const SizedBox(height: 16),
-                        AppTextField(
-                          controller: _specializationController,
-                          label: 'Specialization',
-                        ),
-                        const SizedBox(height: 16),
-                        AppTextField(
-                          controller: _clinicLocationController,
-                          label: 'Clinic Location',
-                        ),
-                        const SizedBox(height: 16),
-                        AppTextField(
-                          controller: _scheduleController,
-                          label: 'Schedule',
-                          maxLines: 3,
-                        ),
-                      ],
-                      if (user.role == UserRole.sitter) ...[
-                        const SizedBox(height: 16),
-                        AppTextField(
-                          controller: _experienceController,
-                          label: 'Experience',
-                          maxLines: 3,
-                        ),
-                        const SizedBox(height: 16),
-                        AppTextField(
-                          controller: _pricingController,
-                          label: 'Hourly Rate',
-                          keyboardType: TextInputType.number,
-                        ),
-                        const SizedBox(height: 16),
-                        AppTextField(
-                          controller: _serviceAreaController,
-                          label: 'Service Area',
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      PrimaryButton(
-                        label: 'Save changes',
-                        isLoading: state.isLoading,
-                        onPressed: _save,
-                      ),
-                    ],
-                  ),
-                ),
+                // Personal Info Section
+                _buildInfoSection(context, user),
+                const SizedBox(height: 32),
+                const Divider(),
+                const SizedBox(height: 16),
+                _buildPetList(),
               ],
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildInfoSection(BuildContext context, AppUser user) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            _buildInfoRow(Icons.person, user.name),
+            const Divider(),
+            _buildInfoRow(Icons.email, user.email),
+            const Divider(),
+            _buildInfoRow(Icons.phone, user.phone ?? 'N/A'),
+            const Divider(),
+            _buildInfoRow(Icons.location_on, user.address ?? 'N/A'),
+            if (user.birthday != null) ...[
+              const Divider(),
+              _buildInfoRow(Icons.cake, user.birthday!),
+            ],
+            if (user.role == UserRole.vet) ...[
+              const Divider(),
+              _buildInfoRow(Icons.medical_services, user.specialization ?? 'N/A', label: 'Specialization'),
+              const Divider(),
+              _buildInfoRow(Icons.local_hospital, user.clinicLocation ?? 'N/A', label: 'Clinic'),
+            ],
+            if (user.role == UserRole.sitter) ...[
+              const Divider(),
+              _buildInfoRow(Icons.work_history, user.experience ?? 'N/A', label: 'Experience'),
+              const Divider(),
+              _buildInfoRow(Icons.attach_money, user.pricing != null ? '\$${user.pricing}/hr' : 'N/A', label: 'Rate'),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String value, {String? label}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: Colors.grey, size: 20),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               if (label != null) ...[
+                 Text(
+                   label,
+                   style: const TextStyle(fontSize: 12, color: Colors.grey),
+                 ),
+                 const SizedBox(height: 2),
+               ],
+               Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPetList() {
+    return BlocBuilder<PetBloc, PetState>(
+      builder: (context, state) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'My Pets',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                TextButton(
+                  onPressed: () =>
+                      Navigator.pushNamed(context, '/pets/form'),
+                  child: const Text('Add Pet'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (state.isLoading && state.pets.isEmpty)
+              const Center(child: CircularProgressIndicator())
+            else if (state.pets.isEmpty)
+              const Text('No pets added yet.')
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: state.pets.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final pet = state.pets[index];
+                  return Card(
+                    margin: EdgeInsets.zero,
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        radius: 20,
+                        backgroundImage: pet.imageUrl != null
+                            ? NetworkImage(pet.imageUrl!)
+                            : null,
+                        child: pet.imageUrl == null
+                            ? Text(pet.name[0].toUpperCase())
+                            : null,
+                      ),
+                      title: Text(pet.name),
+                      subtitle: Text('${pet.species} • ${pet.breed}'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        '/pets/detail',
+                        arguments: pet,
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
+        );
+      },
     );
   }
 }

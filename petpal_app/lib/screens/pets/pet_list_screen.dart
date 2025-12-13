@@ -21,6 +21,10 @@ class _PetListScreenState extends State<PetListScreen> {
   @override
   void initState() {
     super.initState();
+    _loadPets();
+  }
+
+  void _loadPets() {
     final userId = context.read<AuthBloc>().state.user?.id;
     if (userId != null) {
       context.read<PetBloc>().add(PetsRequested(userId));
@@ -29,33 +33,40 @@ class _PetListScreenState extends State<PetListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('My Pets')),
-      body: BlocBuilder<PetBloc, PetState>(
-        builder: (context, state) {
-          if (state.isLoading && state.pets.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state.pets.isEmpty) {
-            return EmptyState(
-              message: 'No pets yet. Add your first furry friend!',
-              actionLabel: 'Add pet',
-              onActionPressed: () =>
-                  Navigator.pushNamed(context, PetFormScreen.routeName),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state.status == AuthStatus.authenticated) {
+          _loadPets();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('My Pets')),
+        body: BlocBuilder<PetBloc, PetState>(
+          builder: (context, state) {
+            if (state.isLoading && state.pets.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (state.pets.isEmpty) {
+              return EmptyState(
+                message: 'No pets yet. Add your first furry friend!',
+                actionLabel: 'Add pet',
+                onActionPressed: () =>
+                    Navigator.pushNamed(context, PetFormScreen.routeName),
+              );
+            }
+            return ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemBuilder: (context, index) => _PetTile(pet: state.pets[index]),
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemCount: state.pets.length,
             );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemBuilder: (context, index) => _PetTile(pet: state.pets[index]),
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemCount: state.pets.length,
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(context, PetFormScreen.routeName),
-        label: const Text('Add pet'),
-        icon: const Icon(Icons.add),
+          },
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => Navigator.pushNamed(context, PetFormScreen.routeName),
+          label: const Text('Add pet'),
+          icon: const Icon(Icons.add),
+        ),
       ),
     );
   }
