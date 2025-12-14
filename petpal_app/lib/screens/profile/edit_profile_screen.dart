@@ -26,14 +26,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   // Vet Data
   List<String> _selectedSpecializations = [];
+  
+  // Shared Availability (Vet & Sitter)
   List<String> _selectedDays = [];
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
 
-  // Sitter controllers
-  late TextEditingController _experienceController;
+  // Sitter controllers & Data
+  late TextEditingController _experienceController; // Description
   late TextEditingController _pricingController;
-  late TextEditingController _serviceAreaController;
+  late TextEditingController _yearsExpController;
+  
+  String? _selectedState; // For Service Area
+
+  List<String> _selectedPetTypes = [];
+  List<String> _selectedServices = [];
 
   final List<String> _allSpecializations = [
     'General Practice',
@@ -46,6 +53,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   ];
 
   final List<String> _daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  // Sitter Constants
+  final List<String> _malaysianStates = [
+    'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
+    'Pahang', 'Perak', 'Perlis', 'Pulau Pinang', 'Sabah', 'Sarawak',
+    'Selangor', 'Terengganu', 'Kuala Lumpur', 'Labuan', 'Putrajaya'
+  ];
+
+  final List<String> _petTypes = ['Dog', 'Cat', 'Rabbit', 'Bird', 'Other'];
+  final List<String> _sitterServices = ['Day Care', 'Overnight Sitting', 'Home Visit', 'Boarding'];
 
   @override
   void initState() {
@@ -62,22 +79,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (user.role == UserRole.vet) {
       _initVetData(user);
     } else if (user.role == UserRole.sitter) {
-      _experienceController = TextEditingController(text: user.experience);
-      _pricingController = TextEditingController(text: user.pricing?.toString());
-      _serviceAreaController = TextEditingController(text: user.serviceArea);
+      _initSitterData(user);
     }
   }
 
   void _initVetData(AppUser user) {
-    // Specializations
     if (user.specialization != null && user.specialization!.isNotEmpty) {
       _selectedSpecializations = user.specialization!.split(',').map((e) => e.trim()).toList();
     }
-
-    // Clinic Location - Synced with Address now
-
-
-    // Schedule: Expected format "Mon, Tue | 09:00 - 17:00"
+    
+    // Parse Vet Schedule
     if (user.schedule != null && user.schedule!.isNotEmpty) {
       final parts = user.schedule!.split('|');
       if (parts.isNotEmpty) {
@@ -96,17 +107,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  void _initSitterData(AppUser user) {
+    _experienceController = TextEditingController(text: user.experience);
+    _pricingController = TextEditingController(text: user.pricing?.toString());
+    _yearsExpController = TextEditingController(text: user.yearsOfExperience?.toString());
+    
+    _selectedState = user.serviceArea; // Assuming serviceArea stores state name
+
+    if (user.petTypesAccepted != null) {
+      _selectedPetTypes = List.from(user.petTypesAccepted!);
+    }
+    if (user.servicesProvided != null) {
+      _selectedServices = List.from(user.servicesProvided!);
+    }
+    if (user.availableDays != null) {
+      _selectedDays = List.from(user.availableDays!);
+    }
+    
+    if (user.availableHours != null) {
+      if (user.availableHours!.containsKey('start')) {
+        _startTime = _parseTime(user.availableHours!['start']!);
+      }
+      if (user.availableHours!.containsKey('end')) {
+        _endTime = _parseTime(user.availableHours!['end']!);
+      }
+    }
+  }
+
   TimeOfDay? _parseTime(String s) {
     try {
-      // Expected "HH:mm" or "HH:mm AM/PM"
-      // Let's rely on TimeOfDay string parsing logic or manual
-      // Material TimeOfDay(09:00) output is "TimeOfDay(09:00)"
-      // But we stored formatted string.
-      // Let's assume standard HH:mm 24h for simplicity or parse typical format
       final parts = s.split(':');
       if (parts.length >= 2) {
         int hour = int.parse(parts[0]);
-        int minute = int.parse(parts[1].split(' ')[0]); // Handle potentially ' AM' suffix?
+        int minute = int.parse(parts[1].split(' ')[0]);
         
         if (s.toLowerCase().contains('pm') && hour < 12) hour += 12;
         if (s.toLowerCase().contains('am') && hour == 12) hour = 0;
@@ -127,7 +160,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (widget.user.role == UserRole.sitter) {
       _experienceController.dispose();
       _pricingController.dispose();
-      _serviceAreaController.dispose();
+      _yearsExpController.dispose();
     }
     super.dispose();
   }
@@ -143,7 +176,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
 
     if (widget.user.role == UserRole.vet) {
-      // Serialize Vet Data
+      // Vet Save Logic
       final specString = _selectedSpecializations.join(', ');
       
       String scheduleString = '';
@@ -156,14 +189,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       updated = updated.copyWith(
         specialization: specString,
-        clinicLocation: _addressController.text.trim(), // Synced with address
+        clinicLocation: _addressController.text.trim(),
         schedule: scheduleString,
       );
     } else if (widget.user.role == UserRole.sitter) {
+      // Sitter Save Logic
+      if (_selectedState == null) {
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a service area (State)')));
+         return;
+      }
+
       updated = updated.copyWith(
         experience: _experienceController.text.trim(),
+        yearsOfExperience: int.tryParse(_yearsExpController.text.trim()),
         pricing: double.tryParse(_pricingController.text.trim()),
-        serviceArea: _serviceAreaController.text.trim(),
+        serviceArea: _selectedState,
+        petTypesAccepted: _selectedPetTypes,
+        servicesProvided: _selectedServices,
+        availableDays: _selectedDays,
+        availableHours: {
+          'start': _startTime != null ? _formatTime(_startTime!) : '09:00',
+          'end': _endTime != null ? _formatTime(_endTime!) : '17:00',
+        },
       );
     }
 
@@ -172,7 +219,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   String _formatTime(TimeOfDay t) {
-    // 24 hours format for internal storage
     final h = t.hour.toString().padLeft(2, '0');
     final m = t.minute.toString().padLeft(2, '0');
     return '$h:$m';
@@ -188,12 +234,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
   }
 
-  void _toggleDay(String day) {
+  void _toggleListItem(List<String> list, String item) {
     setState(() {
-      if (_selectedDays.contains(day)) {
-        _selectedDays.remove(day);
+      if (list.contains(item)) {
+        list.remove(item);
       } else {
-        _selectedDays.add(day);
+        list.add(item);
       }
     });
   }
@@ -220,6 +266,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // --- Generic Info ---
+              const Text('Personal Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
               AppTextField(
                 controller: _nameController,
                 label: 'Full name',
@@ -245,8 +294,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 controller: _birthdayController,
                 label: 'Birthday (YYYY-MM-DD)',
               ),
+              const SizedBox(height: 32),
+
+              // --- Vet Specific ---
               if (user.role == UserRole.vet) ...[
-                const SizedBox(height: 24),
+                const Text('Professional Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
                 const Text('Specialization', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 Wrap(
@@ -260,60 +313,84 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     );
                   }).toList(),
                 ),
-
+                
                 const SizedBox(height: 24),
                 const Text('Working Hours', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: _daysOfWeek.map((day) {
-                    final isSelected = _selectedDays.contains(day);
-                    return FilterChip(
-                      label: Text(day),
-                      selected: isSelected,
-                      onSelected: (_) => _toggleDay(day),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _selectStartTime,
-                        child: Text(_startTime?.format(context) ?? 'Start Time'),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _selectEndTime,
-                        child: Text(_endTime?.format(context) ?? 'End Time'),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildAvailabilitySelector(),
               ],
+
+              // --- Sitter Specific ---
               if (user.role == UserRole.sitter) ...[
+                const Text('Professional Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
+                
                 AppTextField(
                   controller: _experienceController,
-                  label: 'Experience',
+                  label: 'Experience Description',
                   maxLines: 3,
                 ),
                 const SizedBox(height: 16),
+                
                 AppTextField(
-                  controller: _pricingController,
-                  label: 'Hourly Rate',
+                  controller: _yearsExpController,
+                  label: 'Years of Experience',
                   keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 16),
+                
                 AppTextField(
-                  controller: _serviceAreaController,
-                  label: 'Service Area',
+                  controller: _pricingController,
+                  label: 'Hourly Rate (RM)',
+                  keyboardType: TextInputType.number,
                 ),
+                const SizedBox(height: 16),
+                
+                DropdownButtonFormField<String>(
+                  value: _selectedState,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Service Area (State)',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: _malaysianStates.map((state) {
+                    return DropdownMenuItem(child: Text(state), value: state);
+                  }).toList(),
+                  onChanged: (val) => setState(() => _selectedState = val),
+                  validator: (v) => v == null ? 'Please select a state' : null,
+                ),
+                const SizedBox(height: 24),
+
+                const Text('Pet Types Accepted', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: _petTypes.map((type) => FilterChip(
+                    label: Text(type),
+                    selected: _selectedPetTypes.contains(type),
+                    onSelected: (_) => _toggleListItem(_selectedPetTypes, type),
+                  )).toList(),
+                ),
+
+                const SizedBox(height: 24),
+                const Text('Services Provided', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: _sitterServices.map((s) => FilterChip(
+                    label: Text(s),
+                    selected: _selectedServices.contains(s),
+                    onSelected: (_) => _toggleListItem(_selectedServices, s),
+                  )).toList(),
+                ),
+
+                const SizedBox(height: 24),
+                const Text('Work Availability', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 8),
+                _buildAvailabilitySelector(),
               ],
-              const SizedBox(height: 32),
+
+              const SizedBox(height: 48),
               PrimaryButton(
                 label: 'Save Changes',
                 onPressed: _save,
@@ -322,6 +399,43 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAvailabilitySelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          children: _daysOfWeek.map((day) {
+            final isSelected = _selectedDays.contains(day);
+            return FilterChip(
+              label: Text(day),
+              selected: isSelected,
+              onSelected: (_) => _toggleListItem(_selectedDays, day),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _selectStartTime,
+                child: Text(_startTime?.format(context) ?? 'Start Time'),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _selectEndTime,
+                child: Text(_endTime?.format(context) ?? 'End Time'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -339,7 +453,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-           // Mock Map Grid lines
            Column(
              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
              children: List.generate(5, (_) => const Divider(color: Colors.white)),

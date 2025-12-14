@@ -15,6 +15,8 @@ import '../../models/app_user.dart';
 import 'owner_dashboard_screen.dart';
 import '../hotel/hotel_screen.dart';
 import '../sitters/sitter_dashboard_screen.dart';
+import '../sitters/sitter_feed_screen.dart';
+import '../sitters/sitter_home_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -90,8 +92,11 @@ class _HomeScreenState extends State<HomeScreen> {
              ];
              if (_index >= pages.length) _index = 2; // Default to Home
           } else if (user?.role == UserRole.sitter) {
+             // Requested Sitter View: Dashboard, Feed, Home, Reports, Profile
              pages = [
                const SitterDashboardScreen(),
+               const SitterFeedScreen(),
+               const SitterHomeScreen(),
                const ReportDashboardScreen(),
                const ProfileScreen(),
              ];
@@ -100,6 +105,16 @@ class _HomeScreenState extends State<HomeScreen> {
                  icon: Icon(Icons.dashboard_outlined),
                  selectedIcon: Icon(Icons.dashboard),
                  label: 'Dashboard',
+               ),
+               const NavigationDestination(
+                 icon: Icon(Icons.newspaper_outlined),
+                 selectedIcon: Icon(Icons.newspaper),
+                 label: 'Feed',
+               ),
+                const NavigationDestination(
+                 icon: Icon(Icons.home_outlined),
+                 selectedIcon: Icon(Icons.home),
+                 label: 'Home',
                ),
                const NavigationDestination(
                  icon: Icon(Icons.bar_chart_outlined),
@@ -112,7 +127,8 @@ class _HomeScreenState extends State<HomeScreen> {
                  label: 'Profile',
                ),
              ];
-             if (_index >= pages.length) _index = 0;
+             // Default to Home (Index 2)
+             if (_index >= pages.length) _index = 2;
           } else {
              pages = [
               const VetListScreen(),
@@ -166,3 +182,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
