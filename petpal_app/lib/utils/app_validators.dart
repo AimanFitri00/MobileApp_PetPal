@@ -19,8 +19,8 @@ class AppValidators {
   static String? password(String? value) {
     final base = required(value, fieldName: 'Password');
     if (base != null) return base;
-    if (value!.length < 8) {
-      return 'Password must be at least 8 characters';
+    if (value!.length < 6) {
+      return 'Password must be at least 6 characters';
     }
     return null;
   }
