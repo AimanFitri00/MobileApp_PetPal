@@ -1,3 +1,4 @@
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -24,13 +25,17 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
     }
   }
 
-  Future<void> _exportReport(Map<String, dynamic> stats) async {
-    // Note: In a real app, we would call a specific export event for Vet reports.
-    // For now, we will just show a success message as the Bloc event is generic.
-    // To implement fully, we'd add VetReportExportRequested to ReportBloc.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Export feature coming soon!')),
-    );
+  Future<void> _exportReport() async {
+    final user = context.read<AuthBloc>().state.user;
+    if (user == null) return;
+    context.read<ReportBloc>().add(
+          VetReportExportRequested(
+            vetId: user.id,
+            clinicName: user.name,
+            startDate: null,
+            endDate: null,
+          ),
+        );
   }
 
   @override
@@ -42,6 +47,17 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
           if (state.errorMessage != null) {
             DialogUtils.showErrorDialog(context, state.errorMessage!);
           }
+          if (state.exportedBytes != null && !state.isExporting) {
+            FileSaver.instance.saveFile(
+              name: 'clinic-report',
+              bytes: state.exportedBytes!,
+              ext: 'pdf',
+              mimeType: MimeType.pdf,
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Report downloaded.')),
+            );
+          }
         },
         builder: (context, state) {
           if (state.isLoading) {
@@ -52,53 +68,65 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
             return const Center(child: Text('No data available.'));
           }
 
+          final cards = [
+            _StatCard(
+              title: 'Total Appointments',
+              value: (stats['totalAppointments'] ?? 0).toString(),
+              icon: Icons.calendar_today,
+              color: Colors.blue,
+            ),
+            _StatCard(
+              title: 'Completed',
+              value: (stats['completed'] ?? 0).toString(),
+              icon: Icons.check_circle,
+              color: Colors.green,
+            ),
+            _StatCard(
+              title: 'Upcoming',
+              value: (stats['upcoming'] ?? 0).toString(),
+              icon: Icons.schedule,
+              color: Colors.orange,
+            ),
+            _StatCard(
+              title: 'Unique Pets Treated',
+              value: (stats['uniquePets'] ?? 0).toString(),
+              icon: Icons.pets,
+              color: Colors.purple,
+            ),
+          ];
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _StatCard(
-                  title: 'Total Appointments',
-                  value: stats['totalAppointments'].toString(),
-                  icon: Icons.calendar_today,
-                  color: Colors.blue,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        title: 'Completed',
-                        value: stats['completed'].toString(),
-                        icon: Icons.check_circle,
-                        color: Colors.green,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _StatCard(
-                        title: 'Upcoming',
-                        value: stats['upcoming'].toString(),
-                        icon: Icons.schedule,
-                        color: Colors.orange,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _StatCard(
-                  title: 'Unique Pets Treated',
-                  value: stats['uniquePets'].toString(),
-                  icon: Icons.pets,
-                  color: Colors.purple,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth >= 640;
+                    final crossAxisCount = isWide ? 2 : 1;
+                    final cardHeight = isWide ? 150.0 : 140.0;
+                    final childAspectRatio = isWide
+                        ? ((constraints.maxWidth - 16) / 2) / cardHeight
+                        : constraints.maxWidth / cardHeight;
+
+                    return GridView.count(
+                      crossAxisCount: crossAxisCount,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: childAspectRatio,
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      children: cards,
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () => _exportReport(stats),
+                    onPressed: state.isExporting ? null : _exportReport,
                     icon: const Icon(Icons.download),
-                    label: const Text('Export Report'),
+                    label: Text(state.isExporting ? 'Exporting...' : 'Export Report'),
                   ),
                 ),
               ],
