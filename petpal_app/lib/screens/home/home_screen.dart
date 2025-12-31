@@ -7,6 +7,7 @@ import '../../blocs/profile/profile_bloc.dart';
 import '../../repositories/user_repository.dart';
 import '../../services/notification_service.dart';
 import '../bookings/provider_dashboard_screen.dart';
+import '../bookings/provider_calendar_screen.dart';
 import '../profile/profile_screen.dart';
 import '../reports/report_dashboard_screen.dart';
 import '../sitters/sitter_list_screen.dart';
@@ -57,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           if (user?.role == UserRole.vet) {
              pages = [
-               const ProviderDashboardScreen(),
+               const ProviderCalendarScreen(),
                const HotelScreen(),
                const ProviderDashboardScreen(),
                const ReportDashboardScreen(),
@@ -67,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
                const NavigationDestination(
                  icon: Icon(Icons.calendar_today_outlined),
                  selectedIcon: Icon(Icons.calendar_today),
-                 label: 'Appointments',
+                 label: 'Calendar',
                ),
                const NavigationDestination(
                  icon: Icon(Icons.hotel_outlined),

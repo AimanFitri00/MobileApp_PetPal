@@ -115,7 +115,7 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                 .toList()
               ..sort((a, b) => a.date.compareTo(b.date));
 
-            // Load pet and owner data for pending/upcoming bookings
+            // Load pet and owner data for cards we show
             if ((pending.isNotEmpty || upcoming.isNotEmpty) && !_isLoadingData) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _loadBookingData([...pending, ...upcoming]);
