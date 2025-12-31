@@ -1,22 +1,28 @@
+import 'dart:typed_data';
+
 import '../models/activity_log.dart';
 import '../models/booking.dart';
 import '../models/pet.dart';
 import 'activity_repository.dart';
 import 'booking_repository.dart';
 import 'pet_repository.dart';
+import '../services/pdf_service.dart';
 
 class ReportRepository {
   ReportRepository({
     required PetRepository petRepository,
     required BookingRepository bookingRepository,
     required ActivityRepository activityRepository,
+    required PdfService pdfService,
   }) : _petRepository = petRepository,
        _bookingRepository = bookingRepository,
-       _activityRepository = activityRepository;
+       _activityRepository = activityRepository,
+       _pdfService = pdfService;
 
   final PetRepository _petRepository;
   final BookingRepository _bookingRepository;
   final ActivityRepository _activityRepository;
+  final PdfService _pdfService;
 
   Future<Map<String, dynamic>> buildPetReport(
     String ownerId,
@@ -52,28 +58,97 @@ Activity Logs: $activityCount
   }
   Future<Map<String, dynamic>> fetchVetStats(String vetId) async {
     final bookings = await _bookingRepository.fetchVetBookings(vetId);
+    final today = DateTime.now();
+    final todayStart = DateTime(today.year, today.month, today.day);
+
     final completed = bookings
         .where((b) => b.status == BookingStatus.completed)
         .length;
     final upcoming = bookings
-        .where((b) => b.status == BookingStatus.accepted && b.date.isAfter(DateTime.now()))
+        .where((b) {
+          final isAccepted = b.status == BookingStatus.accepted;
+          final isTodayOrFuture = !b.date.isBefore(todayStart);
+          return isAccepted && isTodayOrFuture;
+        })
         .length;
     final pending = bookings
         .where((b) => b.status == BookingStatus.pending)
         .length;
     
-    // Calculate unique pets treated
-    final uniquePets = bookings.map((b) => b.petId).toSet().length;
+    // Calculate unique pets treated (completed bookings only)
+    final uniquePets = bookings
+      .where((b) => b.status == BookingStatus.completed)
+      .map((b) => b.petId)
+      .toSet()
+      .length;
 
     return {
       'totalAppointments': bookings.length,
       'completed': completed,
       'upcoming': upcoming,
       'pending': pending,
+      'rejected': bookings.where((b) => b.status == BookingStatus.rejected || b.status == BookingStatus.cancelled).length,
       'uniquePets': uniquePets,
       'bookings': bookings,
     };
   }
+
+  Future<Uint8List> buildVetReportPdf({
+    required String vetId,
+    required String clinicName,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final bookings = await _bookingRepository.fetchVetBookings(vetId);
+
+    final start = startDate != null
+        ? DateTime(startDate.year, startDate.month, startDate.day)
+        : null;
+    final end = endDate != null
+        ? DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59, 999)
+        : null;
+
+    final filtered = bookings.where((b) {
+      final afterStart = start == null || !b.date.isBefore(start);
+      final beforeEnd = end == null || !b.date.isAfter(end);
+      return afterStart && beforeEnd;
+    }).toList();
+
+    final completed = filtered.where((b) => b.status == BookingStatus.completed).length;
+    final upcoming = filtered.where((b) => b.status == BookingStatus.accepted && !b.date.isBefore(DateTime.now())).length;
+    final pending = filtered.where((b) => b.status == BookingStatus.pending).length;
+    final rejected = filtered.where((b) => b.status == BookingStatus.rejected || b.status == BookingStatus.cancelled).length;
+    final uniquePets = filtered
+        .where((b) => b.status == BookingStatus.completed)
+        .map((b) => b.petId)
+        .toSet()
+        .length;
+
+    final stats = {
+      'totalAppointments': filtered.length,
+      'completed': completed,
+      'upcoming': upcoming,
+      'pending': pending,
+      'rejected': rejected,
+      'uniquePets': uniquePets,
+    };
+
+    final periodLabel = () {
+      if (start == null && end == null) return 'All time';
+      if (start != null && end == null) return 'From ${_fmtDate(start)}';
+      if (start == null && end != null) return 'Until ${_fmtDate(end)}';
+      return '${_fmtDate(start!)} - ${_fmtDate(end!)}';
+    }();
+
+    return _pdfService.buildVetReportDetailed(
+      clinicName: clinicName,
+      periodLabel: periodLabel,
+      stats: stats,
+      bookings: filtered,
+    );
+  }
+
+  String _fmtDate(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Future<Map<String, dynamic>> fetchSitterStats(String sitterId) async {
     final bookings = await _bookingRepository.fetchSitterBookings(sitterId);

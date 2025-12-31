@@ -6,6 +6,9 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/booking/booking_bloc.dart';
 import '../../models/app_user.dart';
 import '../../models/booking.dart';
+import '../../models/pet.dart';
+import '../../repositories/pet_repository.dart';
+import '../../repositories/user_repository.dart';
 import '../../utils/dialog_utils.dart';
 
 class ProviderDashboardScreen extends StatefulWidget {
@@ -18,6 +21,10 @@ class ProviderDashboardScreen extends StatefulWidget {
 }
 
 class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
+  final Map<String, Pet> _petCache = {};
+  final Map<String, AppUser> _ownerCache = {};
+  bool _isLoadingData = false;
+
   @override
   void initState() {
     super.initState();
@@ -26,6 +33,43 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
       context.read<BookingBloc>().add(
             ProviderBookingsRequested(userId: user.id, role: user.role),
           );
+    }
+  }
+
+  Future<void> _loadBookingData(List<Booking> bookings) async {
+    if (_isLoadingData) return;
+    
+    setState(() => _isLoadingData = true);
+    
+    final petRepo = context.read<PetRepository>();
+    final userRepo = context.read<UserRepository>();
+    
+    for (final booking in bookings) {
+      // Fetch pet data if not cached
+      if (!_petCache.containsKey(booking.petId)) {
+        try {
+          final pets = await petRepo.fetchPets(booking.ownerId);
+          for (final pet in pets) {
+            _petCache[pet.id] = pet;
+          }
+        } catch (e) {
+          // Handle error silently
+        }
+      }
+      
+      // Fetch owner data if not cached
+      if (!_ownerCache.containsKey(booking.ownerId)) {
+        try {
+          final owner = await userRepo.fetchUser(booking.ownerId);
+          _ownerCache[booking.ownerId] = owner;
+        } catch (e) {
+          // Handle error silently
+        }
+      }
+    }
+    
+    if (mounted) {
+      setState(() => _isLoadingData = false);
     }
   }
 
@@ -70,6 +114,13 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                 .where((b) => b.status == BookingStatus.accepted)
                 .toList()
               ..sort((a, b) => a.date.compareTo(b.date));
+
+            // Load pet and owner data for cards we show
+            if ((pending.isNotEmpty || upcoming.isNotEmpty) && !_isLoadingData) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _loadBookingData([...pending, ...upcoming]);
+              });
+            }
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -127,7 +178,7 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                      ),
                      const SizedBox(height: 16),
                      SizedBox(
-                       height: 180, // Height for horizontal cards
+                       height: 280, // Height for horizontal cards
                        child: ListView.builder(
                          scrollDirection: Axis.horizontal,
                          itemCount: pending.length,
@@ -184,8 +235,11 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
   }
 
   Widget _buildPendingCard(Booking booking) {
+    final pet = _petCache[booking.petId];
+    final owner = _ownerCache[booking.ownerId];
+    
     return Container(
-      width: 280,
+      width: 320,
       margin: const EdgeInsets.only(right: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -215,23 +269,42 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      booking.petName,
+                      owner?.name ?? booking.ownerName ?? 'Loading...',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      DateFormat.MMMd().format(booking.date),
+                      owner?.email ?? booking.ownerEmail ?? 'Loading...',
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          _buildInfoRow(Icons.pets, 'Pet', pet?.name ?? booking.petName),
+          const SizedBox(height: 6),
+          _buildInfoRow(Icons.category, 'Species', pet?.species ?? booking.petSpecies ?? 'N/A'),
+          const SizedBox(height: 6),
+          _buildInfoRow(Icons.class_, 'Breed', pet?.breed ?? booking.petBreed ?? 'N/A'),
+          const SizedBox(height: 6),
+          _buildInfoRow(Icons.calendar_today, 'Date', DateFormat.MMMd().format(booking.date)),
+          const SizedBox(height: 6),
+          _buildInfoRow(Icons.access_time, 'Time', booking.time ?? "Not specified"),
           const Spacer(),
-          Text('Time: ${booking.time ?? "Not specified"}', style: const TextStyle(fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
-          Text(booking.notes ?? 'No notes', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+          if (booking.notes != null && booking.notes!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Notes: ${booking.notes}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.grey[600], fontSize: 12, fontStyle: FontStyle.italic),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -266,8 +339,31 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
       ),
     );
   }
+  
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey[600]),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: TextStyle(color: Colors.grey[700], fontSize: 13, fontWeight: FontWeight.w500),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 13),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildUpcomingCard(Booking booking) {
+    final pet = _petCache[booking.petId];
+    final owner = _ownerCache[booking.ownerId];
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -305,27 +401,33 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                crossAxisAlignment: CrossAxisAlignment.start,
                children: [
                  Text(
-                   booking.petName, // Ideally owner name if available, but staying within booking model
+                   pet?.name ?? booking.petName,
                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                  ),
                  const SizedBox(height: 4),
-                 Row(
-                   children: [
-                     const Icon(Icons.access_time, size: 14, color: Colors.grey),
-                     const SizedBox(width: 4),
-                     Text(
-                       booking.time ?? 'TBD',
-                       style: TextStyle(color: Colors.grey[600]),
-                     ),
-                   ],
+                 Text(
+                   owner?.name ?? booking.ownerName ?? 'Loading...',
+                   style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                   overflow: TextOverflow.ellipsis,
                  ),
+                 Text(
+                   owner?.email ?? booking.ownerEmail ?? 'Loading...',
+                   style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                   overflow: TextOverflow.ellipsis,
+                 ),
+                 const SizedBox(height: 6),
+                 _buildInfoRow(Icons.category, 'Species', pet?.species ?? booking.petSpecies ?? 'N/A'),
+                 const SizedBox(height: 4),
+                 _buildInfoRow(Icons.class_, 'Breed', pet?.breed ?? booking.petBreed ?? 'N/A'),
+                 const SizedBox(height: 4),
+                 _buildInfoRow(Icons.access_time, 'Time', booking.time ?? 'TBD'),
                  if (booking.notes != null && booking.notes!.isNotEmpty)
                    Padding(
-                     padding: const EdgeInsets.only(top: 4),
+                     padding: const EdgeInsets.only(top: 6),
                      child: Text(
                        booking.notes!,
                        style: TextStyle(color: Colors.grey[500], fontSize: 13, fontStyle: FontStyle.italic),
-                       maxLines: 1, 
+                       maxLines: 1,
                        overflow: TextOverflow.ellipsis,
                      ),
                    ),

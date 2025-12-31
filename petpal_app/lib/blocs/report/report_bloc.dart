@@ -20,6 +20,7 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     on<ReportExportRequested>(_onExportRequested);
     on<VetStatsRequested>(_onVetStatsRequested);
     on<SitterStatsRequested>(_onSitterStatsRequested);
+    on<VetReportExportRequested>(_onVetReportExportRequested);
   }
 
   final ReportRepository _reportRepository;
@@ -81,6 +82,24 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
       final bytes = await _pdfService.buildPetReport(
         petName: pet.name,
         sections: [overview],
+      );
+      emit(state.copyWith(isExporting: false, exportedBytes: bytes));
+    } catch (error) {
+      emit(state.copyWith(isExporting: false, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onVetReportExportRequested(
+    VetReportExportRequested event,
+    Emitter<ReportState> emit,
+  ) async {
+    emit(state.copyWith(isExporting: true));
+    try {
+      final bytes = await _reportRepository.buildVetReportPdf(
+        vetId: event.vetId,
+        clinicName: event.clinicName,
+        startDate: event.startDate,
+        endDate: event.endDate,
       );
       emit(state.copyWith(isExporting: false, exportedBytes: bytes));
     } catch (error) {

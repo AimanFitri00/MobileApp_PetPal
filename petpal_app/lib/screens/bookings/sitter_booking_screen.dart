@@ -42,17 +42,29 @@ class _SitterBookingScreenState extends State<SitterBookingScreen> {
 
   void _submit(AppUser sitter) {
     if (_dateRange == null) return;
-    final ownerId = context.read<AuthBloc>().state.user?.id;
-    if (ownerId == null || _selectedPetId == null) return;
+    final user = context.read<AuthBloc>().state.user;
+    if (user == null || _selectedPetId == null) return;
+    
+    // Find the selected pet
+    final selectedPet = context.read<PetBloc>().state.pets.firstWhere(
+      (pet) => pet.id == _selectedPetId,
+    );
+    
     final booking = Booking.sitter(
       id: '',
-      ownerId: ownerId,
+      ownerId: user.id,
       petId: _selectedPetId!,
       sitterId: sitter.id,
       startDate: _dateRange!.start,
       endDate: _dateRange!.end,
       status: BookingStatus.pending,
       notes: _notesController.text,
+      petName: selectedPet.name,
+      petImageUrl: selectedPet.imageUrl,
+      ownerName: user.name,
+      ownerEmail: user.email,
+      petSpecies: selectedPet.species,
+      petBreed: selectedPet.breed,
     );
     context.read<BookingBloc>().add(BookingCreated(booking));
     Navigator.pushReplacementNamed(

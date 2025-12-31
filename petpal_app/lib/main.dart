@@ -77,6 +77,7 @@ void main() async {
   final authService = FirebaseAuthService(FirebaseAuth.instance);
   final firestoreService = FirestoreService(FirebaseFirestore.instance);
   final storageService = StorageService(FirebaseStorage.instance);
+  final pdfService = PdfService();
 
   final authRepository = AuthRepository(
     authService: authService,
@@ -92,6 +93,7 @@ void main() async {
     petRepository: petRepository,
     bookingRepository: bookingRepository,
     activityRepository: activityRepository,
+    pdfService: pdfService,
   );
   final hotelRepository = HotelRepository(firestoreService);
 
@@ -107,7 +109,7 @@ void main() async {
       reportRepository: reportRepository,
       hotelRepository: hotelRepository,
       storageService: storageService,
-      pdfService: PdfService(),
+      pdfService: pdfService,
       notificationService: notificationService,
     ),
   );

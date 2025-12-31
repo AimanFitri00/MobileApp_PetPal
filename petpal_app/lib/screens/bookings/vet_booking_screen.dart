@@ -32,17 +32,29 @@ class _VetBookingScreenState extends State<VetBookingScreen> {
   }
 
   void _submit(AppUser vet) {
-    final ownerId = context.read<AuthBloc>().state.user?.id;
-    if (ownerId == null || _selectedPetId == null) return;
+    final user = context.read<AuthBloc>().state.user;
+    if (user == null || _selectedPetId == null) return;
+    
+    // Find the selected pet
+    final selectedPet = context.read<PetBloc>().state.pets.firstWhere(
+      (pet) => pet.id == _selectedPetId,
+    );
+    
     final booking = Booking.vet(
       id: '',
-      ownerId: ownerId,
+      ownerId: user.id,
       petId: _selectedPetId!,
       vetId: vet.id,
       date: _selectedDate,
       time: _timeController.text,
       notes: _notesController.text,
       status: BookingStatus.pending,
+      petName: selectedPet.name,
+      petImageUrl: selectedPet.imageUrl,
+      ownerName: user.name,
+      ownerEmail: user.email,
+      petSpecies: selectedPet.species,
+      petBreed: selectedPet.breed,
     );
     context.read<BookingBloc>().add(BookingCreated(booking));
     Navigator.pushReplacementNamed(

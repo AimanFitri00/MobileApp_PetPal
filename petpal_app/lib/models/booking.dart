@@ -16,6 +16,10 @@ class Booking extends Equatable {
     required this.type,
     this.petName = '',
     this.petImageUrl,
+    this.ownerName,
+    this.ownerEmail,
+    this.petSpecies,
+    this.petBreed,
     this.time,
     this.notes,
     this.endDate,
@@ -32,6 +36,10 @@ class Booking extends Equatable {
     required BookingStatus status,
     String? petName,
     String? petImageUrl,
+    String? ownerName,
+    String? ownerEmail,
+    String? petSpecies,
+    String? petBreed,
     String? time,
     String? notes,
   }) {
@@ -47,6 +55,10 @@ class Booking extends Equatable {
       type: BookingType.vet,
       petName: petName ?? '',
       petImageUrl: petImageUrl,
+      ownerName: ownerName,
+      ownerEmail: ownerEmail,
+      petSpecies: petSpecies,
+      petBreed: petBreed,
     );
   }
 
@@ -60,6 +72,10 @@ class Booking extends Equatable {
     required BookingStatus status,
     String? petName,
     String? petImageUrl,
+    String? ownerName,
+    String? ownerEmail,
+    String? petSpecies,
+    String? petBreed,
     String? notes,
     String? serviceType,
   }) {
@@ -75,6 +91,10 @@ class Booking extends Equatable {
       type: BookingType.sitter,
       petName: petName ?? '',
       petImageUrl: petImageUrl,
+      ownerName: ownerName,
+      ownerEmail: ownerEmail,
+      petSpecies: petSpecies,
+      petBreed: petBreed,
       serviceType: serviceType,
     );
   }
@@ -90,6 +110,10 @@ class Booking extends Equatable {
       petId: data['petId'] ?? '',
       petName: data['petName'] ?? '',
       petImageUrl: data['petImageUrl'],
+      ownerName: data['ownerName'] as String?,
+      ownerEmail: data['ownerEmail'] as String?,
+      petSpecies: data['petSpecies'] as String?,
+      petBreed: data['petBreed'] as String?,
       providerId: type == BookingType.vet
           ? data['vetId'] ?? ''
           : data['sitterId'] ?? '',
@@ -112,6 +136,10 @@ class Booking extends Equatable {
   final String petId;
   final String petName;
   final String? petImageUrl;
+  final String? ownerName;
+  final String? ownerEmail;
+  final String? petSpecies;
+  final String? petBreed;
   final String providerId;
   final DateTime date;
   final DateTime? endDate;
@@ -128,6 +156,10 @@ class Booking extends Equatable {
       'petId': petId,
       'petName': petName,
       'petImageUrl': petImageUrl,
+      'ownerName': ownerName,
+      'ownerEmail': ownerEmail,
+      'petSpecies': petSpecies,
+      'petBreed': petBreed,
       'date': date,
       'status': status.name,
       'notes': notes,
@@ -149,6 +181,10 @@ class Booking extends Equatable {
     String? petId,
     String? petName,
     String? petImageUrl,
+    String? ownerName,
+    String? ownerEmail,
+    String? petSpecies,
+    String? petBreed,
     String? providerId,
     DateTime? date,
     DateTime? endDate,
@@ -165,6 +201,10 @@ class Booking extends Equatable {
       petId: petId ?? this.petId,
       petName: petName ?? this.petName,
       petImageUrl: petImageUrl ?? this.petImageUrl,
+      ownerName: ownerName ?? this.ownerName,
+      ownerEmail: ownerEmail ?? this.ownerEmail,
+      petSpecies: petSpecies ?? this.petSpecies,
+      petBreed: petBreed ?? this.petBreed,
       providerId: providerId ?? this.providerId,
       date: date ?? this.date,
       endDate: endDate ?? this.endDate,
@@ -184,6 +224,10 @@ class Booking extends Equatable {
     petId,
     petName,
     petImageUrl,
+    ownerName,
+    ownerEmail,
+    petSpecies,
+    petBreed,
     providerId,
     date,
     endDate,
