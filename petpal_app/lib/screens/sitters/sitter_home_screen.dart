@@ -10,6 +10,31 @@ import '../../widgets/primary_button.dart';
 class SitterHomeScreen extends StatelessWidget {
   const SitterHomeScreen({super.key});
 
+  void _showProfileMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                context.read<AuthBloc>().add(const AuthLogoutRequested());
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthBloc>().state.user;
@@ -22,6 +47,23 @@ class SitterHomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('Welcome, ${user?.name ?? "Sitter"}!', style: const TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
+        actions: [
+          GestureDetector(
+            onTap: () => _showProfileMenu(context),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundImage: user?.profileImageUrl != null
+                    ? NetworkImage(user!.profileImageUrl!)
+                    : null,
+                child: user?.profileImageUrl == null
+                    ? const Icon(Icons.person, size: 20)
+                    : null,
+              ),
+            ),
+          ),
+        ],
       ),
       body: BlocBuilder<BookingBloc, BookingState>(
         builder: (context, state) {

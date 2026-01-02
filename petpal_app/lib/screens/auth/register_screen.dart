@@ -156,8 +156,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(title: const Text('Create Account')),
       body: SafeArea(
         child: BlocListener<AuthBloc, AuthState>(
+          listenWhen: (previous, current) {
+            // Only trigger listener when error or auth status actually changes
+            return previous.errorMessage != current.errorMessage ||
+                   previous.status != current.status;
+          },
           listener: (context, state) {
-            if (state.errorMessage != null) {
+            if (state.errorMessage != null && state.errorMessage!.isNotEmpty) {
               DialogUtils.showErrorDialog(context, state.errorMessage!);
             }
             if (state.status == AuthStatus.authenticated) {

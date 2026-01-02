@@ -76,6 +76,31 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
   void _updateStatus(Booking booking, BookingStatus status) {
     context.read<BookingBloc>().add(BookingStatusUpdated(booking, status));
   }
+
+  void _showProfileMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                context.read<AuthBloc>().add(const AuthLogoutRequested());
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   
   String _getGreeting(AppUser user) {
     if (user.role == UserRole.vet) {
@@ -151,13 +176,16 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                            ],
                          ),
                        ),
-                       CircleAvatar(
-                         backgroundImage: user.profileImageUrl != null
-                             ? NetworkImage(user.profileImageUrl!)
-                             : null,
-                         child: user.profileImageUrl == null
-                             ? const Icon(Icons.person)
-                             : null,
+                       GestureDetector(
+                         onTap: () => _showProfileMenu(context),
+                         child: CircleAvatar(
+                           backgroundImage: user.profileImageUrl != null
+                               ? NetworkImage(user.profileImageUrl!)
+                               : null,
+                           child: user.profileImageUrl == null
+                               ? const Icon(Icons.person)
+                               : null,
+                         ),
                        ),
                      ],
                    ),
