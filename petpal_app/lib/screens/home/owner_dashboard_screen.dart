@@ -95,7 +95,7 @@ class OwnerDashboardScreen extends StatelessWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+              title: const Text('Logout', style: TextStyle(color: Colors.red)),
               onTap: () {
                 Navigator.pop(context);
                 context.read<AuthBloc>().add(const AuthLogoutRequested());

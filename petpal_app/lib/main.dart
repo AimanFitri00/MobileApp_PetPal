@@ -208,8 +208,9 @@ class _PetPalAppState extends State<PetPalApp> {
           ),
         ],
         child: BlocListener<AuthBloc, AuthState>(
+          listenWhen: (previous, current) => previous.status != current.status,
           listener: (context, state) {
-            // Navigate to login screen when user logs out
+            // Navigate to login screen only when auth status changes to unauthenticated.
             if (state.status == AuthStatus.unauthenticated) {
               _navigatorKey.currentState?.pushNamedAndRemoveUntil(
                 LoginScreen.routeName,
