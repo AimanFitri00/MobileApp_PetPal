@@ -14,7 +14,6 @@ import 'blocs/booking/booking_bloc.dart';
 import 'blocs/pet/pet_bloc.dart';
 import 'blocs/profile/profile_bloc.dart';
 import 'blocs/report/report_bloc.dart';
-import 'blocs/report/report_bloc.dart';
 import 'blocs/sitter/sitter_bloc.dart';
 import 'blocs/vet/vet_bloc.dart';
 import 'blocs/hotel/hotel_bloc.dart';
@@ -150,6 +149,8 @@ class PetPalApp extends StatefulWidget {
 }
 
 class _PetPalAppState extends State<PetPalApp> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     super.initState();
@@ -206,16 +207,27 @@ class _PetPalAppState extends State<PetPalApp> {
             ),
           ),
         ],
-        child: MaterialApp(
-          title: 'PetPal',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
-            useMaterial3: true,
-            fontFamily: 'Roboto',
-          ),
-          initialRoute: LoginScreen.routeName,
-          routes: {
+        child: BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            // Navigate to login screen when user logs out
+            if (state.status == AuthStatus.unauthenticated) {
+              _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                LoginScreen.routeName,
+                (route) => false,
+              );
+            }
+          },
+          child: MaterialApp(
+            navigatorKey: _navigatorKey,
+            title: 'PetPal',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+              useMaterial3: true,
+              fontFamily: 'Roboto',
+            ),
+            initialRoute: LoginScreen.routeName,
+            routes: {
             LoginScreen.routeName: (_) => const LoginScreen(),
             RegisterScreen.routeName: (_) => const RegisterScreen(),
             ForgotPasswordScreen.routeName: (_) => const ForgotPasswordScreen(),
@@ -260,6 +272,7 @@ class _PetPalAppState extends State<PetPalApp> {
             SitterProfileSetupScreen.routeName: (_) => const SitterProfileSetupScreen(),
             CheckInScreen.routeName: (_) => const CheckInScreen(),
           },
+          ),
         ),
       ),
     );

@@ -56,9 +56,54 @@ class OwnerDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildGreetingSection(BuildContext context) {
-    return const Text(
-      'Glad to see you again!',
-      style: TextStyle(fontSize: 16, color: Colors.grey),
+    final user = context.select((AuthBloc bloc) => bloc.state.user);
+    
+    return Row(
+      children: [
+        Expanded(
+          child: const Text(
+            'Glad to see you again!',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ),
+        GestureDetector(
+          onTap: () => _showProfileMenu(context),
+          child: CircleAvatar(
+            radius: 24,
+            backgroundImage: user?.profileImageUrl != null
+                ? NetworkImage(user!.profileImageUrl!)
+                : null,
+            child: user?.profileImageUrl == null
+                ? const Icon(Icons.person)
+                : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showProfileMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                context.read<AuthBloc>().add(const AuthLogoutRequested());
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
