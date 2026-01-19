@@ -195,9 +195,15 @@ class OwnerDashboardScreen extends StatelessWidget {
             const SizedBox(height: 12),
             CircleAvatar(
               radius: 30,
-              backgroundImage:
-                  pet.imageUrl != null ? NetworkImage(pet.imageUrl!) : null,
-              child: pet.imageUrl == null
+              backgroundImage: () {
+                if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
+                  final f = File(pet.imageUrl!);
+                  if (f.existsSync()) return FileImage(f) as ImageProvider;
+                  return NetworkImage(pet.imageUrl!);
+                }
+                return null;
+              }(),
+              child: pet.imageUrl == null || pet.imageUrl!.isEmpty
                   ? const Icon(Icons.pets, size: 30)
                   : null,
             ),

@@ -47,7 +47,7 @@ class PetBloc extends Bloc<PetEvent, PetState> {
         }
         return p;
       }).toList();
-      emit(state.copyWith(isLoading: false, pets: updated));
+      emit(state.copyWith(isLoading: false, pets: updated, uploadedImageUrl: ''));
     } catch (error) {
       emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
@@ -71,7 +71,7 @@ class PetBloc extends Bloc<PetEvent, PetState> {
           }
         }
       } catch (_) {}
-      emit(state.copyWith(isLoading: false, pets: updated));
+      emit(state.copyWith(isLoading: false, pets: updated, uploadedImageUrl: ''));
     } catch (error) {
       emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }

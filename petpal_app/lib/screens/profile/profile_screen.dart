@@ -277,10 +277,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: ListTile(
                       leading: CircleAvatar(
                         radius: 20,
-                        backgroundImage: pet.imageUrl != null
-                            ? NetworkImage(pet.imageUrl!)
-                            : null,
-                        child: pet.imageUrl == null
+                        backgroundImage: () {
+                          if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
+                            final f = File(pet.imageUrl!);
+                            if (f.existsSync()) return FileImage(f) as ImageProvider;
+                            return NetworkImage(pet.imageUrl!);
+                          }
+                          return null;
+                        }(),
+                        child: pet.imageUrl == null || pet.imageUrl!.isEmpty
                             ? Text(pet.name[0].toUpperCase())
                             : null,
                       ),
