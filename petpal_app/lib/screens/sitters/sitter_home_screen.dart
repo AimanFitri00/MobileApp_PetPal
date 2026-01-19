@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:io';
+import '../../blocs/profile/profile_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../blocs/auth/auth_bloc.dart';
@@ -52,14 +54,27 @@ class SitterHomeScreen extends StatelessWidget {
             onTap: () => _showProfileMenu(context),
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundImage: user?.profileImageUrl != null
-                    ? NetworkImage(user!.profileImageUrl!)
-                    : null,
-                child: user?.profileImageUrl == null
-                    ? const Icon(Icons.person, size: 20)
-                    : null,
+              child: BlocBuilder<ProfileBloc, ProfileState>(
+                builder: (context, profileState) {
+                  // Ensure the ProfileBloc has loaded the current user's profile
+                  if (user != null && (profileState.user == null || profileState.user!.id != user.id)) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      context.read<ProfileBloc>().add(ProfileRequested(user.id));
+                    });
+                  }
+                  final localPath = profileState.localProfileImagePath;
+                  ImageProvider? avatarImage;
+                  if (localPath != null) {
+                    avatarImage = FileImage(File(localPath));
+                  } else if (user?.profileImageUrl != null) {
+                    avatarImage = NetworkImage(user!.profileImageUrl!);
+                  }
+                  return CircleAvatar(
+                    radius: 18,
+                    backgroundImage: avatarImage,
+                    child: avatarImage == null ? const Icon(Icons.person, size: 20) : null,
+                  );
+                },
               ),
             ),
           ),

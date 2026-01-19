@@ -33,3 +33,13 @@ class ProfileImageUploaded extends ProfileEvent {
   @override
   List<Object?> get props => [file];
 }
+
+class ProfileLocalImageSet extends ProfileEvent {
+  const ProfileLocalImageSet({required this.path, required this.uid});
+
+  final String path;
+  final String uid;
+
+  @override
+  List<Object?> get props => [path, uid];
+}

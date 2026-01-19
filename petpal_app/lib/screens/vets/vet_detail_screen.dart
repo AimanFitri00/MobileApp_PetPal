@@ -1,5 +1,10 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/profile/profile_bloc.dart';
 import '../../models/app_user.dart';
 import '../bookings/vet_booking_screen.dart';
 
@@ -18,6 +23,32 @@ class VetDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, authState) {
+                  final currentId = authState.user?.id;
+                  if (vet.id == currentId) {
+                    return BlocBuilder<ProfileBloc, ProfileState>(
+                      builder: (context, pstate) {
+                        final local = pstate.localProfileImagePath;
+                        if (local != null && local.isNotEmpty) {
+                          return CircleAvatar(radius: 48, backgroundImage: FileImage(File(local)));
+                        }
+                        if (vet.profileImageUrl != null) {
+                          return CircleAvatar(radius: 48, backgroundImage: NetworkImage(vet.profileImageUrl!));
+                        }
+                        return const CircleAvatar(radius: 48, child: Icon(Icons.person, size: 48));
+                      },
+                    );
+                  }
+                  if (vet.profileImageUrl != null) {
+                    return CircleAvatar(radius: 48, backgroundImage: NetworkImage(vet.profileImageUrl!));
+                  }
+                  return const CircleAvatar(radius: 48, child: Icon(Icons.person, size: 48));
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
             Text(
               vet.specialization ?? 'General Practice',
               style: Theme.of(context).textTheme.titleLarge,

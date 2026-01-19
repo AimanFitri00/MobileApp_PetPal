@@ -134,9 +134,14 @@ class _PetFormScreenState extends State<PetFormScreen> {
                         children: [
                           CircleAvatar(
                             radius: 50,
-                            backgroundImage: displayImage != null && displayImage.isNotEmpty
-                                ? NetworkImage(displayImage)
-                                : null,
+                            backgroundImage: () {
+                              if (displayImage != null && displayImage.isNotEmpty) {
+                                final file = File(displayImage);
+                                if (file.existsSync()) return FileImage(file) as ImageProvider;
+                                return NetworkImage(displayImage);
+                              }
+                              return null;
+                            }(),
                             child: displayImage == null || displayImage.isEmpty
                                 ? const Icon(Icons.pets, size: 50)
                                 : null,

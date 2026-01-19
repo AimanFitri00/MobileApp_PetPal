@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/profile/profile_bloc.dart';
 import '../../blocs/vet/vet_bloc.dart';
 import '../../models/app_user.dart';
 import '../../widgets/empty_state.dart';
@@ -99,6 +103,30 @@ class _VetCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
+        leading: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            final currentId = authState.user?.id;
+            if (vet.id == currentId) {
+              return BlocBuilder<ProfileBloc, ProfileState>(
+                builder: (context, pstate) {
+                  final local = pstate.localProfileImagePath;
+                  if (local != null && local.isNotEmpty) {
+                    return CircleAvatar(radius: 20, backgroundImage: FileImage(File(local)));
+                  }
+                  if (vet.profileImageUrl != null) {
+                    return CircleAvatar(radius: 20, backgroundImage: NetworkImage(vet.profileImageUrl!));
+                  }
+                  return CircleAvatar(radius: 20, child: Text(vet.name.isNotEmpty ? vet.name[0].toUpperCase() : '?'));
+                },
+              );
+            }
+            if (vet.profileImageUrl != null) {
+              return CircleAvatar(radius: 20, backgroundImage: NetworkImage(vet.profileImageUrl!));
+            }
+            return CircleAvatar(radius: 20, child: Text(vet.name.isNotEmpty ? vet.name[0].toUpperCase() : '?'));
+          },
+        ),
+
         title: Text(vet.name),
         subtitle: Text('${vet.clinicLocation ?? vet.address} • ${vet.specialization}'),
         trailing: const Icon(Icons.chevron_right),

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/app_user.dart';
 import '../../repositories/user_repository.dart';
@@ -20,6 +21,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<ProfileRequested>(_onRequested);
     on<ProfileUpdated>(_onUpdated);
     on<ProfileImageUploaded>(_onImageUploaded);
+    on<ProfileLocalImageSet>(_onLocalImageSet);
   }
 
   final UserRepository _userRepository;
@@ -32,7 +34,11 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     emit(state.copyWith(isLoading: true));
     try {
       final user = await _userRepository.fetchUser(event.uid);
-      emit(state.copyWith(isLoading: false, user: user));
+      // load saved local profile image path for this user (if any)
+      final prefs = await SharedPreferences.getInstance();
+      final userKey = 'local_profile_image_${event.uid}';
+      final localPath = prefs.getString(userKey);
+      emit(state.copyWith(isLoading: false, user: user, localProfileImagePath: localPath));
     } catch (error) {
       emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
@@ -58,9 +64,10 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     if (state.user == null) return;
     emit(state.copyWith(isLoading: true));
     try {
+      final path = 'profiles/${state.user!.id}/${DateTime.now().millisecondsSinceEpoch}.jpg';
       final url = await _storageService.uploadFile(
         file: event.file,
-        path: 'profiles/${state.user!.id}',
+        path: path,
       );
       final updated = state.user!.copyWith(profileImageUrl: url);
       await _userRepository.updateUser(updated);
@@ -68,5 +75,16 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     } catch (error) {
       emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
+  }
+
+  Future<void> _onLocalImageSet(
+    ProfileLocalImageSet event,
+    Emitter<ProfileState> emit,
+  ) async {
+    // persist selection locally under the provided UID so other screens can read it
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'local_profile_image_${event.uid}';
+    await prefs.setString(key, event.path);
+    emit(state.copyWith(localProfileImagePath: event.path));
   }
 }
