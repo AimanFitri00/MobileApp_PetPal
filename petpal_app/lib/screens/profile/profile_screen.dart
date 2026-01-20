@@ -40,9 +40,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final result = await FilePicker.platform.pickFiles(type: FileType.image);
     if (result == null) return;
     if (!mounted) return;
-    context.read<ProfileBloc>().add(
-      ProfileImageUploaded(File(result.files.single.path!)),
-    );
+    // Copy picked file to a stable temp location and persist path in ProfileBloc
+    final pickedPath = result.files.single.path!;
+    final authUser = context.read<AuthBloc>().state.user;
+    if (authUser == null) return;
+    final src = File(pickedPath);
+    try {
+      final dest = File('${Directory.systemTemp.path}/petpal_profile_${authUser.id}.jpg');
+      await src.copy(dest.path);
+      context.read<ProfileBloc>().add(ProfileLocalImageSet(path: dest.path, uid: authUser.id));
+    } catch (_) {
+      // fallback to original path
+      context.read<ProfileBloc>().add(ProfileLocalImageSet(path: pickedPath, uid: authUser.id));
+    }
   }
 
   void _openEditScreen(AppUser user) {
@@ -132,15 +142,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 48,
-                  backgroundImage: user.profileImageUrl != null
-                      ? NetworkImage(user.profileImageUrl!)
-                      : null,
-                  child: user.profileImageUrl == null
-                      ? const Icon(Icons.person, size: 48)
-                      : null,
-                ),
+                // Use the ProfileBloc state passed into the builder so updates reliably rebuild
+                Builder(builder: (_) {
+                  final localPath = state.localProfileImagePath;
+                  ImageProvider? avatarImage;
+                  if (localPath != null && localPath.isNotEmpty) {
+                    avatarImage = FileImage(File(localPath));
+                  } else if (user.profileImageUrl != null) {
+                    avatarImage = NetworkImage(user.profileImageUrl!);
+                  }
+                  return CircleAvatar(
+                    radius: 48,
+                    backgroundImage: avatarImage,
+                    child: avatarImage == null
+                        ? const Icon(Icons.person, size: 48)
+                        : null,
+                  );
+                }),
                 TextButton.icon(
                   onPressed: _uploadImage,
                   icon: const Icon(Icons.upload),
@@ -259,10 +277,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: ListTile(
                       leading: CircleAvatar(
                         radius: 20,
-                        backgroundImage: pet.imageUrl != null
-                            ? NetworkImage(pet.imageUrl!)
-                            : null,
-                        child: pet.imageUrl == null
+                        backgroundImage: () {
+                          if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
+                            final f = File(pet.imageUrl!);
+                            if (f.existsSync()) return FileImage(f) as ImageProvider;
+                            return NetworkImage(pet.imageUrl!);
+                          }
+                          return null;
+                        }(),
+                        child: pet.imageUrl == null || pet.imageUrl!.isEmpty
                             ? Text(pet.name[0].toUpperCase())
                             : null,
                       ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:io';
+import '../../blocs/profile/profile_bloc.dart';
 import 'package:intl/intl.dart';
 
 import '../../blocs/auth/auth_bloc.dart';
@@ -66,18 +68,31 @@ class OwnerDashboardScreen extends StatelessWidget {
             style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
         ),
-        GestureDetector(
-          onTap: () => _showProfileMenu(context),
-          child: CircleAvatar(
-            radius: 24,
-            backgroundImage: user?.profileImageUrl != null
-                ? NetworkImage(user!.profileImageUrl!)
-                : null,
-            child: user?.profileImageUrl == null
-                ? const Icon(Icons.person)
-                : null,
-          ),
-        ),
+         GestureDetector(
+           onTap: () => _showProfileMenu(context),
+           child: BlocBuilder<ProfileBloc, ProfileState>(
+             builder: (context, profileState) {
+               // If ProfileBloc hasn't loaded this user's profile, request it once
+               if (user != null && (profileState.user == null || profileState.user!.id != user.id)) {
+                 WidgetsBinding.instance.addPostFrameCallback((_) {
+                   context.read<ProfileBloc>().add(ProfileRequested(user.id));
+                 });
+               }
+               final localPath = profileState.localProfileImagePath;
+               ImageProvider? avatarImage;
+               if (localPath != null) {
+                 avatarImage = FileImage(File(localPath));
+               } else if (user?.profileImageUrl != null) {
+                 avatarImage = NetworkImage(user!.profileImageUrl!);
+               }
+               return CircleAvatar(
+                 radius: 24,
+                 backgroundImage: avatarImage,
+                 child: avatarImage == null ? const Icon(Icons.person) : null,
+               );
+             },
+           ),
+         ),
       ],
     );
   }
@@ -180,9 +195,15 @@ class OwnerDashboardScreen extends StatelessWidget {
             const SizedBox(height: 12),
             CircleAvatar(
               radius: 30,
-              backgroundImage:
-                  pet.imageUrl != null ? NetworkImage(pet.imageUrl!) : null,
-              child: pet.imageUrl == null
+              backgroundImage: () {
+                if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
+                  final f = File(pet.imageUrl!);
+                  if (f.existsSync()) return FileImage(f) as ImageProvider;
+                  return NetworkImage(pet.imageUrl!);
+                }
+                return null;
+              }(),
+              child: pet.imageUrl == null || pet.imageUrl!.isEmpty
                   ? const Icon(Icons.pets, size: 30)
                   : null,
             ),

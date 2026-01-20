@@ -76,12 +76,11 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     emit(state.copyWith(isExporting: true));
     try {
       final pet = state.reportData!['pet'];
-      final bookings = state.reportData!['bookings'];
-      final logs = state.reportData!['activities'];
-      final overview = _reportRepository.formatOverview(pet, bookings, logs);
-      final bytes = await _pdfService.buildPetReport(
-        petName: pet.name,
-        sections: [overview],
+      final bookings = state.reportData!['bookings'] as List;
+      // Use repository method to build a detailed pet PDF (same style as vet report)
+      final bytes = await _reportRepository.buildPetReportPdf(
+        ownerId: pet.ownerId ?? '',
+        petId: pet.id,
       );
       emit(state.copyWith(isExporting: false, exportedBytes: bytes));
     } catch (error) {

@@ -38,6 +38,64 @@ class ReportRepository {
     return {'pet': pet, 'bookings': petBookings, 'activities': logs};
   }
 
+  Future<Uint8List> buildPetReportPdf({
+    required String ownerId,
+    required String petId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final bookings = await _bookingRepository.fetchOwnerBookings(ownerId);
+    final petBookings = bookings.where((b) => b.petId == petId).toList();
+
+    final start = startDate != null
+        ? DateTime(startDate.year, startDate.month, startDate.day)
+        : null;
+    final end = endDate != null
+        ? DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59, 999)
+        : null;
+
+    final filtered = petBookings.where((b) {
+      final afterStart = start == null || !b.date.isBefore(start);
+      final beforeEnd = end == null || !b.date.isAfter(end);
+      return afterStart && beforeEnd;
+    }).toList();
+
+    final completed = filtered.where((b) => b.status == BookingStatus.completed).length;
+    final upcoming = filtered.where((b) => b.status == BookingStatus.accepted && !b.date.isBefore(DateTime.now())).length;
+    final pending = filtered.where((b) => b.status == BookingStatus.pending).length;
+
+    final uniqueVets = filtered
+      .where((b) => b.status == BookingStatus.completed)
+      .map((b) => b.providerId)
+      .toSet()
+      .length;
+
+    final stats = {
+      'totalAppointments': filtered.length,
+      'completed': completed,
+      'upcoming': upcoming,
+      'pending': pending,
+      'uniqueVets': uniqueVets,
+    };
+
+    final pets = await _petRepository.fetchPets(ownerId);
+    final pet = pets.firstWhere((p) => p.id == petId);
+
+    final periodLabel = () {
+      if (start == null && end == null) return 'All time';
+      if (start != null && end == null) return 'From ${_fmtDate(start)}';
+      if (start == null && end != null) return 'Until ${_fmtDate(end)}';
+      return '${_fmtDate(start!)} - ${_fmtDate(end!)}';
+    }();
+
+    return _pdfService.buildPetReportDetailed(
+      petName: pet.name,
+      periodLabel: periodLabel,
+      stats: stats,
+      bookings: filtered,
+    );
+  }
+
   String formatOverview(
     Pet pet,
     List<Booking> bookings,

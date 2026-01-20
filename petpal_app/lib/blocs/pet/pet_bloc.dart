@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/pet.dart';
 import '../../repositories/pet_repository.dart';
@@ -36,7 +37,17 @@ class PetBloc extends Bloc<PetEvent, PetState> {
     emit(state.copyWith(isLoading: true));
     try {
       final pets = await _petRepository.fetchPets(event.ownerId);
-      emit(state.copyWith(isLoading: false, pets: pets));
+      // overlay any locally persisted pet images (local-only previews)
+      final prefs = await SharedPreferences.getInstance();
+      final updated = pets.map((p) {
+        final key = 'local_pet_image_${p.id}';
+        final localPath = prefs.getString(key);
+        if (localPath != null && localPath.isNotEmpty) {
+          return p.copyWith(imageUrl: localPath);
+        }
+        return p;
+      }).toList();
+      emit(state.copyWith(isLoading: false, pets: updated, uploadedImageUrl: ''));
     } catch (error) {
       emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
@@ -50,7 +61,17 @@ class PetBloc extends Bloc<PetEvent, PetState> {
           : event.pet;
       await _petRepository.createPet(pet);
       final updated = List<Pet>.from(state.pets)..add(pet);
-      emit(state.copyWith(isLoading: false, pets: updated));
+      // Persist local pet image path if it's a local file
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
+          final f = File(pet.imageUrl!);
+          if (f.existsSync()) {
+            await prefs.setString('local_pet_image_${pet.id}', pet.imageUrl!);
+          }
+        }
+      } catch (_) {}
+      emit(state.copyWith(isLoading: false, pets: updated, uploadedImageUrl: ''));
     } catch (error) {
       emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }
@@ -63,6 +84,16 @@ class PetBloc extends Bloc<PetEvent, PetState> {
       final updated = state.pets
           .map((pet) => pet.id == event.pet.id ? event.pet : pet)
           .toList();
+      // Persist local pet image path if it's a local file
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        if (event.pet.imageUrl != null && event.pet.imageUrl!.isNotEmpty) {
+          final f = File(event.pet.imageUrl!);
+          if (f.existsSync()) {
+            await prefs.setString('local_pet_image_${event.pet.id}', event.pet.imageUrl!);
+          }
+        }
+      } catch (_) {}
       emit(state.copyWith(isLoading: false, pets: updated));
     } catch (error) {
       emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
@@ -86,11 +117,10 @@ class PetBloc extends Bloc<PetEvent, PetState> {
   ) async {
     emit(state.copyWith(isLoading: true));
     try {
-      final url = await _storageService.uploadFile(
-        file: event.image,
-        path: 'pets/${_uuid.v4()}',
-      );
-      emit(state.copyWith(isLoading: false, uploadedImageUrl: url));
+      // Copy selected image to a stable local temp path for local-only preview
+      final dest = File('${Directory.systemTemp.path}/petpal_pet_${_uuid.v4()}.jpg');
+      await event.image.copy(dest.path);
+      emit(state.copyWith(isLoading: false, uploadedImageUrl: dest.path));
     } catch (error) {
       emit(state.copyWith(isLoading: false, errorMessage: error.toString()));
     }

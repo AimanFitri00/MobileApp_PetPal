@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:share_plus/share_plus.dart';
@@ -68,9 +70,14 @@ class PetDetailScreen extends StatelessWidget {
           child: CircleAvatar(
             radius: 70,
             backgroundColor: Colors.grey[200],
-            backgroundImage: pet.imageUrl != null && pet.imageUrl!.isNotEmpty
-                ? NetworkImage(pet.imageUrl!)
-                : null,
+            backgroundImage: () {
+              if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
+                final f = File(pet.imageUrl!);
+                if (f.existsSync()) return FileImage(f) as ImageProvider;
+                return NetworkImage(pet.imageUrl!);
+              }
+              return null;
+            }(),
             child: pet.imageUrl == null || pet.imageUrl!.isEmpty
                 ? const Icon(Icons.pets, size: 64, color: Colors.grey)
                 : null,
