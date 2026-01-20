@@ -11,29 +11,115 @@ class BookingSummaryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Booking summary')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
           children: [
-            Text('Type: ${booking.type.name}'),
-            Text('Pet: ${booking.petId}'),
-            Text('Date: ${booking.date}'),
-            if (booking.time != null) Text('Time: ${booking.time}'),
-            if (booking.endDate != null) Text('End date: ${booking.endDate}'),
+            Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundImage: booking.petImageUrl != null
+                          ? NetworkImage(booking.petImageUrl!) as ImageProvider
+                          : const AssetImage('assets/images/pet_placeholder.png'),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(booking.petName, style: theme.titleLarge),
+                          const SizedBox(height: 6),
+                          Text(booking.petBreed ?? '', style: theme.bodyMedium),
+                          const SizedBox(height: 8),
+                          Text(booking.type.name.toUpperCase(), style: theme.bodySmall?.copyWith(color: Colors.grey[600])),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(booking.status.name.toUpperCase(), style: theme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 12),
-            Text('Notes: ${booking.notes ?? 'None'}'),
-            const Spacer(),
-            FilledButton(
-              onPressed: () =>
-                  Navigator.popUntil(context, ModalRoute.withName('/home')),
-              child: const Text('Back to dashboard'),
+            Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _detailRow('Booking ID', booking.id),
+                    const Divider(),
+                    _detailRow('Date', _formatDate(booking.date)),
+                    if (booking.time != null) ...[
+                      const Divider(),
+                      _detailRow('Time', booking.time!),
+                    ],
+                    if (booking.endDate != null) ...[
+                      const Divider(),
+                      _detailRow('End date', _formatDate(booking.endDate!)),
+                    ],
+                    const Divider(),
+                    _detailRow('Notes', booking.notes ?? 'None'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      // TODO: cancel booking
+                    },
+                    child: const Text('Cancel Booking'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.popUntil(context, ModalRoute.withName('/home'));
+                    },
+                    child: const Text('Back to dashboard'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _detailRow(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Expanded(child: Text(title, style: const TextStyle(color: Colors.black54))),
+          Flexible(child: Text(value, textAlign: TextAlign.right)),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}' ;
   }
 }

@@ -55,3 +55,15 @@ class SitterStatsRequested extends ReportEvent {
   @override
   List<Object?> get props => [sitterId];
 }
+
+class SitterReportExportRequested extends ReportEvent {
+  const SitterReportExportRequested({required this.sitterId, required this.sitterName, this.startDate, this.endDate});
+
+  final String sitterId;
+  final String sitterName;
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  @override
+  List<Object?> get props => [sitterId, sitterName, startDate, endDate];
+}

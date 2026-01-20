@@ -122,12 +122,14 @@ class SitterHomeScreen extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 // Upcoming Section
-                const Text('Next Appointment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text('Next Appointments', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 if (upcoming.isEmpty) 
-                   _buildEmptyState('No upcoming appointments')
-                else 
-                   _buildBookingTile(upcoming.first, context, highlight: true),
+                  _buildEmptyState('No upcoming appointments')
+                else ...[
+                  // Show all upcoming appointments; highlight the earliest one
+                  ...upcoming.map((b) => _buildBookingTile(b, context, highlight: b == upcoming.first)).toList(),
+                ],
               ],
             ),
           );
