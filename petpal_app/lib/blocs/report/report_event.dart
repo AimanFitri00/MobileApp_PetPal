@@ -47,6 +47,23 @@ class VetStatsRequested extends ReportEvent {
   List<Object?> get props => [vetId];
 }
 
+class VetReportExportCsvRequested extends ReportEvent {
+  const VetReportExportCsvRequested({
+    required this.vetId,
+    required this.clinicName,
+    this.startDate,
+    this.endDate,
+  });
+
+  final String vetId;
+  final String clinicName;
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  @override
+  List<Object?> get props => [vetId, clinicName, startDate, endDate];
+}
+
 class SitterStatsRequested extends ReportEvent {
   const SitterStatsRequested(this.sitterId);
 

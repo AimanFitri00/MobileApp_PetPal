@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -24,6 +25,7 @@ class ProviderCalendarScreen extends StatefulWidget {
 class _ProviderCalendarScreenState extends State<ProviderCalendarScreen> {
   final Map<String, Pet> _petCache = {};
   final Map<String, AppUser> _ownerCache = {};
+  final Set<String> _ownersFetched = {};
   bool _isLoadingData = false;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -48,8 +50,8 @@ class _ProviderCalendarScreenState extends State<ProviderCalendarScreen> {
     final userRepo = context.read<UserRepository>();
 
     for (final booking in bookings) {
-      // Fetch pet data if not cached
-      if (!_petCache.containsKey(booking.petId)) {
+      // Fetch all pets for an owner once (more reliable than depending on petId presence)
+      if (!_ownersFetched.contains(booking.ownerId)) {
         try {
           final pets = await petRepo.fetchPets(booking.ownerId);
           for (final pet in pets) {
@@ -58,6 +60,7 @@ class _ProviderCalendarScreenState extends State<ProviderCalendarScreen> {
         } catch (_) {
           // Ignore fetch errors for now
         }
+        _ownersFetched.add(booking.ownerId);
       }
 
       // Fetch owner data if not cached
@@ -118,6 +121,12 @@ class _ProviderCalendarScreenState extends State<ProviderCalendarScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant ProviderCalendarScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // No-op
   }
 
   Widget _buildCalendarSection(List<Booking> bookings) {
@@ -198,9 +207,16 @@ class _ProviderCalendarScreenState extends State<ProviderCalendarScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      pet?.name ?? booking.petName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          (booking.petName.isNotEmpty ? booking.petName : (pet?.name ?? '')),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        if (kDebugMode)
+                          Text('petId: ${booking.petId} id: ${booking.id}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                      ],
                     ),
                   ],
                 ),
@@ -215,9 +231,9 @@ class _ProviderCalendarScreenState extends State<ProviderCalendarScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          _buildInfoRow(Icons.category, 'Species', pet?.species ?? booking.petSpecies ?? 'N/A'),
+          _buildInfoRow(Icons.category, 'Species', booking.petSpecies ?? pet?.species ?? 'N/A'),
           const SizedBox(height: 4),
-          _buildInfoRow(Icons.class_, 'Breed', pet?.breed ?? booking.petBreed ?? 'N/A'),
+          _buildInfoRow(Icons.class_, 'Breed', booking.petBreed ?? pet?.breed ?? 'N/A'),
           const SizedBox(height: 4),
           Text(
             owner?.name ?? booking.ownerName ?? 'Loading...',

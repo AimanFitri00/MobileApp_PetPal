@@ -6,6 +6,7 @@ class ReportState extends Equatable {
     required this.isExporting,
     this.reportData,
     this.exportedBytes,
+    this.exportedFileType,
     this.errorMessage,
   });
 
@@ -15,6 +16,7 @@ class ReportState extends Equatable {
   final bool isExporting;
   final Map<String, dynamic>? reportData;
   final Uint8List? exportedBytes;
+  final String? exportedFileType;
   final String? errorMessage;
 
   ReportState copyWith({
@@ -22,6 +24,7 @@ class ReportState extends Equatable {
     bool? isExporting,
     Map<String, dynamic>? reportData,
     Uint8List? exportedBytes,
+    String? exportedFileType,
     String? errorMessage,
   }) {
     return ReportState(
@@ -29,7 +32,8 @@ class ReportState extends Equatable {
       isExporting: isExporting ?? this.isExporting,
       reportData: reportData ?? this.reportData,
       exportedBytes: exportedBytes ?? this.exportedBytes,
-      errorMessage: errorMessage,
+      exportedFileType: exportedFileType ?? this.exportedFileType,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 
@@ -39,6 +43,7 @@ class ReportState extends Equatable {
     isExporting,
     reportData,
     exportedBytes,
+    exportedFileType,
     errorMessage,
   ];
 }

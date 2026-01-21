@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:convert';
 
 import '../models/activity_log.dart';
 import '../models/booking.dart';
@@ -204,6 +205,48 @@ Activity Logs: $activityCount
       stats: stats,
       bookings: filtered,
     );
+  }
+
+  Future<Uint8List> buildVetReportCsv({
+    required String vetId,
+    required String clinicName,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final bookings = await _bookingRepository.fetchVetBookings(vetId);
+
+    final start = startDate != null
+        ? DateTime(startDate.year, startDate.month, startDate.day)
+        : null;
+    final end = endDate != null
+        ? DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59, 999)
+        : null;
+
+    final filtered = bookings.where((b) {
+      final afterStart = start == null || !b.date.isBefore(start);
+      final beforeEnd = end == null || !b.date.isAfter(end);
+      return afterStart && beforeEnd;
+    }).toList();
+
+    // Build CSV rows
+    final rows = <List<String>>[];
+    rows.add(['bookingId', 'petId', 'petName', 'ownerId', 'ownerName', 'date', 'time', 'status', 'providerId']);
+    for (final b in filtered) {
+      rows.add([
+        b.id,
+        b.petId ?? '',
+        b.petName ?? '',
+        b.ownerId ?? '',
+        b.ownerName ?? '',
+        b.date.toIso8601String(),
+        b.time ?? '',
+        b.status.name,
+        b.providerId ?? '',
+      ]);
+    }
+
+    final csv = rows.map((r) => r.map((c) => '"${c.replaceAll('"', '""')}"').join(',')).join('\n');
+    return Uint8List.fromList(utf8.encode(csv));
   }
 
   String _fmtDate(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
