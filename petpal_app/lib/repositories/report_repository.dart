@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:convert';
 
 import '../models/activity_log.dart';
 import '../models/booking.dart';
@@ -206,27 +207,121 @@ Activity Logs: $activityCount
     );
   }
 
+  Future<Uint8List> buildVetReportCsv({
+    required String vetId,
+    required String clinicName,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final bookings = await _bookingRepository.fetchVetBookings(vetId);
+
+    final start = startDate != null
+        ? DateTime(startDate.year, startDate.month, startDate.day)
+        : null;
+    final end = endDate != null
+        ? DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59, 999)
+        : null;
+
+    final filtered = bookings.where((b) {
+      final afterStart = start == null || !b.date.isBefore(start);
+      final beforeEnd = end == null || !b.date.isAfter(end);
+      return afterStart && beforeEnd;
+    }).toList();
+
+    // Build CSV rows
+    final rows = <List<String>>[];
+    rows.add(['bookingId', 'petId', 'petName', 'ownerId', 'ownerName', 'date', 'time', 'status', 'providerId']);
+    for (final b in filtered) {
+      rows.add([
+        b.id,
+        b.petId ?? '',
+        b.petName ?? '',
+        b.ownerId ?? '',
+        b.ownerName ?? '',
+        b.date.toIso8601String(),
+        b.time ?? '',
+        b.status.name,
+        b.providerId ?? '',
+      ]);
+    }
+
+    final csv = rows.map((r) => r.map((c) => '"${c.replaceAll('"', '""')}"').join(',')).join('\n');
+    return Uint8List.fromList(utf8.encode(csv));
+  }
+
   String _fmtDate(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Future<Map<String, dynamic>> fetchSitterStats(String sitterId) async {
     final bookings = await _bookingRepository.fetchSitterBookings(sitterId);
-    final completed = bookings
-        .where((b) => b.status == BookingStatus.completed)
-        .length;
-    final pending = bookings
-        .where((b) => b.status == BookingStatus.pending)
-        .length;
-    
-    // Calculate completion rate
-    final total = bookings.length;
-    final completionRate = total > 0 ? (completed / total) * 100 : 0.0;
+    final completed = bookings.where((b) => b.status == BookingStatus.completed).length;
+    final pending = bookings.where((b) => b.status == BookingStatus.pending).length;
+
+    // Calculate completion rate based on past appointments only (appointments that have occurred)
+    final now = DateTime.now();
+    final pastBookings = bookings.where((b) => !b.date.isAfter(now)).toList();
+    final pastTotal = pastBookings.length;
+    final pastCompleted = pastBookings.where((b) => b.status == BookingStatus.completed).length;
+    final completionRate = pastTotal > 0 ? (pastCompleted / pastTotal) * 100 : 0.0;
 
     return {
-      'totalJobs': total,
+      'totalJobs': bookings.length,
       'completed': completed,
       'pending': pending,
       'completionRate': completionRate,
       'bookings': bookings,
     };
+  }
+
+  Future<Uint8List> buildSitterReportPdf({
+    required String sitterId,
+    required String sitterName,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final bookings = await _bookingRepository.fetchSitterBookings(sitterId);
+
+    final start = startDate != null
+        ? DateTime(startDate.year, startDate.month, startDate.day)
+        : null;
+    final end = endDate != null
+        ? DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59, 999)
+        : null;
+
+    final filtered = bookings.where((b) {
+      final afterStart = start == null || !b.date.isBefore(start);
+      final beforeEnd = end == null || !b.date.isAfter(end);
+      return afterStart && beforeEnd;
+    }).toList();
+
+    final completed = filtered.where((b) => b.status == BookingStatus.completed).length;
+    final pending = filtered.where((b) => b.status == BookingStatus.pending).length;
+    final total = filtered.length;
+
+    // Compute completion rate based on past appointments in the filtered range
+    final now = DateTime.now();
+    final pastFiltered = filtered.where((b) => !b.date.isAfter(now)).toList();
+    final pastTotal = pastFiltered.length;
+    final pastCompleted = pastFiltered.where((b) => b.status == BookingStatus.completed).length;
+    final stats = {
+      'totalJobs': total,
+      'completed': completed,
+      'pending': pending,
+      'completionRate': pastTotal > 0 ? (pastCompleted / pastTotal) * 100 : 0.0,
+    };
+
+    final periodLabel = () {
+      if (start == null && end == null) return 'All time';
+      if (start != null && end == null) return 'From ${_fmtDate(start)}';
+      if (start == null && end != null) return 'Until ${_fmtDate(end)}';
+      return '${_fmtDate(start!)} - ${_fmtDate(end!)}';
+    }();
+
+    // Reuse the vet detailed layout for sitter by passing sitterName and bookings
+    return _pdfService.buildVetReportDetailed(
+      clinicName: sitterName,
+      periodLabel: periodLabel,
+      stats: stats,
+      bookings: filtered,
+    );
   }
 }

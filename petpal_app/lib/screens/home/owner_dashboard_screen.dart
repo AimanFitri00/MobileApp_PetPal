@@ -144,6 +144,14 @@ class OwnerDashboardScreen extends StatelessWidget {
         const SizedBox(height: 12),
         BlocBuilder<PetBloc, PetState>(
           builder: (context, state) {
+            // If pets haven't been loaded yet, request them once after build.
+            final authUser = context.read<AuthBloc>().state.user;
+            if (authUser != null && state.pets.isEmpty && !state.isLoading) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                context.read<PetBloc>().add(PetsRequested(authUser.id));
+                context.read<BookingBloc>().add(BookingsRequested(authUser.id));
+              });
+            }
             if (state.isLoading && state.pets.isEmpty) {
               return const Center(child: CircularProgressIndicator());
             }

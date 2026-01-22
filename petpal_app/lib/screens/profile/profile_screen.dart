@@ -53,6 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // fallback to original path
       context.read<ProfileBloc>().add(ProfileLocalImageSet(path: pickedPath, uid: authUser.id));
     }
+
   }
 
   void _openEditScreen(AppUser user) {
@@ -240,68 +241,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPetList() {
-    return BlocBuilder<PetBloc, PetState>(
-      builder: (context, state) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return BlocBuilder<ProfileBloc, ProfileState>(
+      builder: (context, pState) {
+        final currentUser = pState.user ?? context.read<AuthBloc>().state.user;
+        if (currentUser != null && currentUser.role == UserRole.sitter) {
+          return const SizedBox.shrink();
+        }
+        return BlocBuilder<PetBloc, PetState>(
+          builder: (context, state) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'My Pets',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                TextButton(
-                  onPressed: () =>
-                      Navigator.pushNamed(context, '/pets/form'),
-                  child: const Text('Add Pet'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (state.isLoading && state.pets.isEmpty)
-              const Center(child: CircularProgressIndicator())
-            else if (state.pets.isEmpty)
-              const Text('No pets added yet.')
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: state.pets.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final pet = state.pets[index];
-                  return Card(
-                    margin: EdgeInsets.zero,
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        radius: 20,
-                        backgroundImage: () {
-                          if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
-                            final f = File(pet.imageUrl!);
-                            if (f.existsSync()) return FileImage(f) as ImageProvider;
-                            return NetworkImage(pet.imageUrl!);
-                          }
-                          return null;
-                        }(),
-                        child: pet.imageUrl == null || pet.imageUrl!.isEmpty
-                            ? Text(pet.name[0].toUpperCase())
-                            : null,
-                      ),
-                      title: Text(pet.name),
-                      subtitle: Text('${pet.species} • ${pet.breed}'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Navigator.pushNamed(
-                        context,
-                        '/pets/detail',
-                        arguments: pet,
-                      ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'My Pets',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                  );
-                },
-              ),
-          ],
+                    TextButton(
+                      onPressed: () => Navigator.pushNamed(context, '/pets/form'),
+                      child: const Text('Add Pet'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (state.isLoading && state.pets.isEmpty)
+                  const Center(child: CircularProgressIndicator())
+                else if (state.pets.isEmpty)
+                  const Text('No pets added yet.')
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: state.pets.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final pet = state.pets[index];
+                      return Card(
+                        margin: EdgeInsets.zero,
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            radius: 20,
+                            backgroundImage: () {
+                              if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
+                                final f = File(pet.imageUrl!);
+                                if (f.existsSync()) return FileImage(f) as ImageProvider;
+                                return NetworkImage(pet.imageUrl!);
+                              }
+                              return null;
+                            }(),
+                            child: pet.imageUrl == null || pet.imageUrl!.isEmpty
+                                ? Text(pet.name[0].toUpperCase())
+                                : null,
+                          ),
+                          title: Text(pet.name),
+                          subtitle: Text('${pet.species} • ${pet.breed}'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.pushNamed(
+                            context,
+                            '/pets/detail',
+                            arguments: pet,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            );
+          },
         );
       },
     );

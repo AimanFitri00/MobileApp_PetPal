@@ -14,7 +14,7 @@ import '../sitters/sitter_list_screen.dart';
 import '../vets/vet_list_screen.dart';
 import '../../models/app_user.dart';
 import 'owner_dashboard_screen.dart';
-import '../hotel/hotel_screen.dart';
+// Hotel removed for veterinarian users
 import '../sitters/sitter_dashboard_screen.dart';
 import '../sitters/sitter_feed_screen.dart';
 import '../sitters/sitter_home_screen.dart';
@@ -59,7 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
           if (user?.role == UserRole.vet) {
              pages = [
                const ProviderCalendarScreen(),
-               const HotelScreen(),
                const ProviderDashboardScreen(),
                const ReportDashboardScreen(),
                const ProfileScreen(),
@@ -69,11 +68,6 @@ class _HomeScreenState extends State<HomeScreen> {
                  icon: Icon(Icons.calendar_today_outlined),
                  selectedIcon: Icon(Icons.calendar_today),
                  label: 'Calendar',
-               ),
-               const NavigationDestination(
-                 icon: Icon(Icons.hotel_outlined),
-                 selectedIcon: Icon(Icons.hotel),
-                 label: 'Hotel',
                ),
                const NavigationDestination(
                  icon: Icon(Icons.home_outlined),

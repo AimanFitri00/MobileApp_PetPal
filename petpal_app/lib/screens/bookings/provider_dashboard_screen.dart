@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -23,6 +24,7 @@ class ProviderDashboardScreen extends StatefulWidget {
 class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
   final Map<String, Pet> _petCache = {};
   final Map<String, AppUser> _ownerCache = {};
+  final Set<String> _ownersFetched = {};
   bool _isLoadingData = false;
 
   @override
@@ -45,8 +47,8 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
     final userRepo = context.read<UserRepository>();
     
     for (final booking in bookings) {
-      // Fetch pet data if not cached
-      if (!_petCache.containsKey(booking.petId)) {
+      // Fetch all pets for an owner once (more reliable than depending on petId presence)
+      if (!_ownersFetched.contains(booking.ownerId)) {
         try {
           final pets = await petRepo.fetchPets(booking.ownerId);
           for (final pet in pets) {
@@ -55,6 +57,7 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
         } catch (e) {
           // Handle error silently
         }
+        _ownersFetched.add(booking.ownerId);
       }
       
       // Fetch owner data if not cached
@@ -146,6 +149,8 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                 _loadBookingData([...pending, ...upcoming]);
               });
             }
+
+            
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -282,9 +287,11 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
         ],
         border: Border.all(color: Colors.orange.withOpacity(0.3)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Row(
             children: [
               CircleAvatar(
@@ -314,16 +321,16 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
           const SizedBox(height: 12),
           const Divider(height: 1),
           const SizedBox(height: 12),
-          _buildInfoRow(Icons.pets, 'Pet', pet?.name ?? booking.petName),
+          _buildInfoRow(Icons.pets, 'Pet', (booking.petName.isNotEmpty ? booking.petName : (pet?.name ?? ''))),
           const SizedBox(height: 6),
-          _buildInfoRow(Icons.category, 'Species', pet?.species ?? booking.petSpecies ?? 'N/A'),
+          _buildInfoRow(Icons.category, 'Species', booking.petSpecies ?? pet?.species ?? 'N/A'),
           const SizedBox(height: 6),
-          _buildInfoRow(Icons.class_, 'Breed', pet?.breed ?? booking.petBreed ?? 'N/A'),
+          _buildInfoRow(Icons.class_, 'Breed', booking.petBreed ?? pet?.breed ?? 'N/A'),
           const SizedBox(height: 6),
           _buildInfoRow(Icons.calendar_today, 'Date', DateFormat.MMMd().format(booking.date)),
           const SizedBox(height: 6),
           _buildInfoRow(Icons.access_time, 'Time', booking.time ?? "Not specified"),
-          const Spacer(),
+          const SizedBox(height: 12),
           if (booking.notes != null && booking.notes!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
@@ -365,6 +372,7 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
           ),
         ],
       ),
+    ),
     );
   }
   
@@ -426,12 +434,20 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
            const SizedBox(width: 16),
            Expanded(
              child: Column(
+               mainAxisSize: MainAxisSize.min,
                crossAxisAlignment: CrossAxisAlignment.start,
                children: [
-                 Text(
-                   pet?.name ?? booking.petName,
-                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                 ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          (booking.petName.isNotEmpty ? booking.petName : (pet?.name ?? '')),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        if (kDebugMode)
+                          Text('petId: ${booking.petId} id: ${booking.id}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                      ],
+                    ),
                  const SizedBox(height: 4),
                  Text(
                    owner?.name ?? booking.ownerName ?? 'Loading...',
@@ -444,9 +460,9 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                    overflow: TextOverflow.ellipsis,
                  ),
                  const SizedBox(height: 6),
-                 _buildInfoRow(Icons.category, 'Species', pet?.species ?? booking.petSpecies ?? 'N/A'),
+                 _buildInfoRow(Icons.category, 'Species', booking.petSpecies ?? pet?.species ?? 'N/A'),
                  const SizedBox(height: 4),
-                 _buildInfoRow(Icons.class_, 'Breed', pet?.breed ?? booking.petBreed ?? 'N/A'),
+                 _buildInfoRow(Icons.class_, 'Breed', booking.petBreed ?? pet?.breed ?? 'N/A'),
                  const SizedBox(height: 4),
                  _buildInfoRow(Icons.access_time, 'Time', booking.time ?? 'TBD'),
                  if (booking.notes != null && booking.notes!.isNotEmpty)

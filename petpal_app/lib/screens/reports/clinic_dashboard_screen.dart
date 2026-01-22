@@ -33,14 +33,34 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
   Future<void> _exportReport() async {
     final user = context.read<AuthBloc>().state.user;
     if (user == null) return;
-    context.read<ReportBloc>().add(
-          VetReportExportRequested(
-            vetId: user.id,
-            clinicName: user.name,
-            startDate: null,
-            endDate: null,
-          ),
-        );
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Export format'),
+        content: const Text('Choose the export format for the clinic report.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop('pdf'), child: const Text('PDF')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop('csv'), child: const Text('CSV')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(null), child: const Text('Cancel')),
+        ],
+      ),
+    );
+
+    if (choice == 'csv') {
+      context.read<ReportBloc>().add(
+            VetReportExportCsvRequested(
+              vetId: user.id,
+              clinicName: user.name,
+            ),
+          );
+    } else if (choice == 'pdf') {
+      context.read<ReportBloc>().add(
+            VetReportExportRequested(
+              vetId: user.id,
+              clinicName: user.name,
+            ),
+          );
+    }
   }
 
   Future<String?> _saveBytesToDownloads(Uint8List bytes, String filename) async {
@@ -74,69 +94,70 @@ class _ClinicDashboardScreenState extends State<ClinicDashboardScreen> {
           }
           if (state.exportedBytes != null && !state.isExporting) {
             final bytes = state.exportedBytes!;
+            final fileType = state.exportedFileType ?? 'pdf';
+
             final choice = await showDialog<String>(
               context: context,
               builder: (ctx) => AlertDialog(
                 title: const Text('Report ready'),
                 content: const Text('Would you like to share the report or save it to Downloads?'),
                 actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop('share'),
-                    child: const Text('Share'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop('save'),
-                    child: const Text('Save to Downloads'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(null),
-                    child: const Text('Cancel'),
-                  ),
+                  TextButton(onPressed: () => Navigator.of(ctx).pop('share'), child: const Text('Share')),
+                  TextButton(onPressed: () => Navigator.of(ctx).pop('save'), child: const Text('Save to Downloads')),
+                  TextButton(onPressed: () => Navigator.of(ctx).pop(null), child: const Text('Cancel')),
                 ],
               ),
             );
 
-            if (choice == 'share') {
-              await Printing.sharePdf(bytes: bytes, filename: 'clinic-report.pdf');
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Share dialog opened.')),
-              );
-            } else if (choice == 'save') {
-              // First, write a guaranteed copy into the app documents directory so file is non-empty
-              try {
-                final docDir = await getApplicationDocumentsDirectory();
-                final localFile = File('${docDir.path}/clinic-report.pdf');
-                await localFile.writeAsBytes(bytes);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Report saved locally: ${localFile.path}')),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Local save failed: ${e.toString()}')),
-                );
-              }
+            if (fileType == 'pdf') {
+              if (choice == 'share') {
+                await Printing.sharePdf(bytes: bytes, filename: 'clinic-report.pdf');
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Share dialog opened.')));
+              } else if (choice == 'save') {
+                try {
+                  final docDir = await getApplicationDocumentsDirectory();
+                  final localFile = File('${docDir.path}/clinic-report.pdf');
+                  await localFile.writeAsBytes(bytes);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report saved locally: ${localFile.path}')));
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Local save failed: ${e.toString()}')));
+                }
 
-              // Then attempt to save to Downloads via FileSaver; fallback to direct Downloads write if it fails
-              try {
-                await FileSaver.instance.saveFile(
-                  name: 'clinic-report',
-                  bytes: bytes,
-                  ext: 'pdf',
-                  mimeType: MimeType.pdf,
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Report saved (via FileSaver).')),
-                );
-              } catch (_) {
-                final savedPath = await _saveBytesToDownloads(bytes, 'clinic-report.pdf');
-                if (savedPath != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Report saved to: $savedPath')),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Save failed.')),
-                  );
+                try {
+                  await FileSaver.instance.saveFile(name: 'clinic-report', bytes: bytes, ext: 'pdf', mimeType: MimeType.pdf);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report saved (via FileSaver).')));
+                } catch (_) {
+                  final savedPath = await _saveBytesToDownloads(bytes, 'clinic-report.pdf');
+                  if (savedPath != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Report saved to: $savedPath')));
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Save failed.')));
+                  }
+                }
+              }
+            } else if (fileType == 'csv') {
+              // For CSV, sharing via Printing.sharePdf is not appropriate; just save/share the bytes as CSV file
+              if (choice == 'share') {
+                // Attempt to save a temp file and share using Printing.sharePdf is not applicable; instead write and inform user
+                try {
+                  final docDir = await getApplicationDocumentsDirectory();
+                  final localFile = File('${docDir.path}/clinic-report.csv');
+                  await localFile.writeAsBytes(bytes);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('CSV ready: ${localFile.path}')));
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Local save failed: ${e.toString()}')));
+                }
+              } else if (choice == 'save') {
+                try {
+                  await FileSaver.instance.saveFile(name: 'clinic-report', bytes: bytes, ext: 'csv', mimeType: MimeType.other);
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('CSV saved (via FileSaver).')));
+                } catch (_) {
+                  final savedPath = await _saveBytesToDownloads(bytes, 'clinic-report.csv');
+                  if (savedPath != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('CSV saved to: $savedPath')));
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Save failed.')));
+                  }
                 }
               }
             }
